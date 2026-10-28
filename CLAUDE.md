@@ -52,8 +52,9 @@ report the facts against §3.2. Stop.
 they are flagged `db_empty`, kept for SFT and left out of the GRPO prompt pool; EX is also reported on non-empty gold
 results (`ex_nonempty_gold`). Details in §3.2.
 
-macOS notes: 8 GB RAM. Local inference of ≤ 0.6B models runs on MPS in fp16; anything ≥ 1.5B and all training run on
-Kaggle (2×T4, 30 GPU-hours a week). If Python ever "quits unexpectedly", it is the OpenMP clash solved in shop-recsys
+macOS notes: 8 GB RAM. **No model runs on the Mac** (rule in §2): every inference and training run is a Kaggle kernel
+(2×T4, 30 GPU-hours a week); the Mac runs Claude Code, git, the Claude API baselines, tests with the tiny model and
+light scripts. If Python ever "quits unexpectedly", it is the OpenMP clash solved in shop-recsys
 (`scripts/fix_openmp_macos.py` there); this project does not use faiss or LightGBM, so it should not happen.
 
 ## 1. Goal
@@ -88,6 +89,9 @@ self-hosted deployment. This is the most asked-about topic in ML interviews righ
   says so, shows the base model's own score as the floor, and the optional M6 fresh set is the remedy.
 - API: the key lives in `.env`; `--max-usd` caps every API run (default 5 USD); report the spend.
 - Kaggle: credentials stay in `~/.kaggle/`; only the username is ever read. Kernels are private.
+- **Every model inference and every training run happens in a Kaggle kernel** (GPU T4, internet on, private). The Mac
+  only runs Claude Code, git, the Claude API baselines, tests with the tiny model, and light scripts (hardness check,
+  tokenizer lengths, summaries).
 
 ## 3. Data
 

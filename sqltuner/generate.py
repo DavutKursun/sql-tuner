@@ -8,7 +8,7 @@ import os
 import time
 from dataclasses import dataclass, field
 
-from .config import API_MODELS, GEN, GenRules
+from .config import API_MODELS, API_THINKING_OFF, GEN, GenRules
 
 
 @dataclass
@@ -145,7 +145,8 @@ class BudgetExceeded(RuntimeError):
 
 class AnthropicBackend(Backend):
     """Reference baselines. The key is read from the environment (.env), never printed. The system prompt and few-shot
-    turns are marked for prompt caching. `max_usd` stops the run before it can overspend."""
+    turns are marked for prompt caching. `max_usd` stops the run before it can overspend. No sampling parameters are
+    sent (the current models reject them), so `temperature` is ignored; thinking is off where config says so."""
 
     name = "anthropic"
 
@@ -158,6 +159,7 @@ class AnthropicBackend(Backend):
             client = anthropic.Anthropic()
         self.client, self.model_id, self.max_usd = client, model_id, max_usd
         self.prices = API_MODELS.get(model_id, (0.0, 0.0))
+        self.thinking = API_THINKING_OFF.get(model_id)
         self.spent = 0.0
 
     def _one(self, conv: list[dict], temperature: float, max_new_tokens: int) -> Reply:
@@ -168,7 +170,8 @@ class AnthropicBackend(Backend):
         if len(msgs) > 1:  # few-shot turns are identical for every question: cache them too
             msgs[-2] = {"role": msgs[-2]["role"], "content": [{"type": "text", "text": msgs[-2]["content"], "cache_control": {"type": "ephemeral"}}]}
         t0 = time.perf_counter()
-        r = self.client.messages.create(model=self.model_id, system=system, messages=msgs, max_tokens=max_new_tokens, temperature=temperature)
+        extra = {"thinking": self.thinking} if self.thinking else {}
+        r = self.client.messages.create(model=self.model_id, system=system, messages=msgs, max_tokens=max_new_tokens, **extra)
         ms = (time.perf_counter() - t0) * 1000
         u = r.usage
         cached = (getattr(u, "cache_read_input_tokens", 0) or 0)
@@ -176,7 +179,7 @@ class AnthropicBackend(Backend):
         p_in, p_out = self.prices
         cost = (u.input_tokens * p_in + written * p_in * 1.25 + cached * p_in * 0.1 + u.output_tokens * p_out) / 1e6
         self.spent += cost
-        text = "".join(getattr(b, "text", "") for b in r.content)
+        text = "".join(b.text for b in r.content if getattr(b, "type", "text") == "text")  # by block type: a reply may start with thinking
         return Reply(text, u.input_tokens + cached + written, u.output_tokens, ms, cost)
 
     def generate(self, batch, n=1, temperature=0.0, max_new_tokens=GEN.max_new_tokens):

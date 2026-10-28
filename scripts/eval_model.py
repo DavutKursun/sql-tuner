@@ -97,7 +97,9 @@ def main(argv=None, backend_override=None) -> int:
     out_dir = a.out / a.split
     write_predictions(preds, out_dir / f"{tag}.jsonl")
     summary = summarize(preds, usage, {"backend": a.backend, "adapter": a.adapter, "split": a.split, "tag": tag, "few_shot": a.few_shot, "samples": a.samples,
-                                       "sample_rows": a.sample_rows, "limit": a.limit, "run_date": str(date.today()), "minutes": round((time.time() - t) / 60, 2)})
+                                       "sample_rows": a.sample_rows, "limit": a.limit, "run_date": str(date.today()), "minutes": round((time.time() - t) / 60, 2),
+                                       "thinking": getattr(backend, "thinking", None), "stopped_early": len(preds) < len(examples),
+                                       "device": getattr(backend, "device", None), "batch_size": a.batch_size if a.backend.startswith("hf:") else None})
     (out_dir / f"{tag}.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     acc = summary["accuracy"]
     print(f"{tag} on {a.split}: EX {acc['ex']:.4f}  CI by question [{acc['ci_case'][0]:.4f}, {acc['ci_case'][1]:.4f}]  "
@@ -108,6 +110,7 @@ def main(argv=None, backend_override=None) -> int:
               f"CI by database [{ne['ci_db'][0]:.4f}, {ne['ci_db'][1]:.4f}]  n={ne['n']}")
     print("by hardness:", {k: (v["n"], round(v["ex"], 3) if v["ex"] is not None else None) for k, v in summary["by_hardness"].items()})
     print("executed", round(summary["executed_rate"], 3), "| errors", summary["errors"], "| usage", summary.get("usage"))
+    print(f"minutes {summary['minutes']} | generated tokens/s (wall clock) {usage.completion_tokens / max(60 * summary['minutes'], 1e-9):.1f}")
     return 0
 
 

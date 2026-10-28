@@ -30,6 +30,10 @@ BASE_CANDIDATES = (
 
 # Hosted reference models (Anthropic API). Prices in USD per million tokens (input, output); check before quoting.
 API_MODELS = {"claude-haiku-5-5": (0.10, 0.50), "claude-sonnet-5-5": (2.00, 10.00)}
+# Thinking off for the reference baselines, so Claude answers in one pass within max_new_tokens like the local models
+# (Sonnet 5.5 rejects "disabled"; "between_tools" is its lowest setting). The 5.5 models take no temperature (API
+# version 2026-10-21 rejects it), so their answers are sampled at the API's defaults.
+API_THINKING_OFF = {"claude-haiku-5-5": {"type": "disabled"}, "claude-sonnet-5-5": {"type": "between_tools"}}
 
 
 @dataclass(frozen=True)

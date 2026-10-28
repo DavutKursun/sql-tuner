@@ -11,7 +11,7 @@ import numpy as np
 from .config import GEN, PROMPT, SEED, PromptRules
 from .data import Example, db_path
 from .db import ExecResult, Executor
-from .generate import Backend, Usage
+from .generate import Backend, BudgetExceeded, Usage
 from .metrics import accuracy, by_hardness, grade, majority_vote
 from .prompts import extract_sql, messages, schema_text
 
@@ -70,7 +70,12 @@ def evaluate(examples: list[Example], backend: Backend, spider_dir: Path, rules:
             path = str(db_path(spider_dir, e.db_id, e.split))
             sch = schema_text(path, rules.sample_rows, rules.max_cell_chars, rules.max_schema_chars)
             convs.append(messages(sch, e.question, [(s, q, sql) for db, s, q, sql in shots if db != e.db_id]))
-        replies = backend.generate(convs, n=samples, temperature=temp, max_new_tokens=max_new_tokens)
+        try:
+            replies = backend.generate(convs, n=samples, temperature=temp, max_new_tokens=max_new_tokens)
+        except BudgetExceeded as err:  # keep the questions already paid for; the summary shows the smaller n
+            if log:
+                log(f"  stopped after {len(preds):,} questions: {err}")
+            break
         for e, group in zip(part, replies):
             path = db_path(spider_dir, e.db_id, e.split)
             gold = ex.gold(path, e.query)
@@ -89,6 +94,22 @@ def evaluate(examples: list[Example], backend: Backend, spider_dir: Path, rules:
     return preds, usage
 
 
+ERROR_TYPES = (("syntax error", "syntax error"), ("incomplete input", "incomplete query"), ("no such column", "unknown column"),
+               ("no such table", "unknown table"), ("ambiguous column", "ambiguous column"), ("no such function", "unknown function"),
+               ("misuse of aggregate", "misused aggregate"))
+
+
+def error_type(error: str) -> str:
+    """Coarse class of an execution error for summaries: the guard's reason, timeout, no SQL, or a SQLite error class."""
+    low = error.lower()
+    if low.startswith("guard") or low in ("timeout", "no sql"):
+        return error
+    for needle, name in ERROR_TYPES:
+        if needle in low:
+            return name
+    return "sqlite: " + " ".join(error.split(":", 1)[-1].split()[:3])
+
+
 def summarize(preds: list[Prediction], usage: Usage | None = None, extra: dict | None = None) -> dict:
     """`accuracy` is EX on every question (Spider's convention); `ex_nonempty_gold` leaves out the questions whose gold
     result is empty, where a query that runs and returns nothing counts as correct."""
@@ -97,7 +118,7 @@ def summarize(preds: list[Prediction], usage: Usage | None = None, extra: dict |
     errors: dict[str, int] = {}
     for p in preds:
         if p.error:
-            key = p.error.split(":")[0] if not p.error.startswith("sqlite") else "sqlite: " + p.error.split(":", 1)[1].strip().split(" ")[0]
+            key = error_type(p.error)
             errors[key] = errors.get(key, 0) + 1
     out = {"accuracy": accuracy(correct, [p.db_id for p in preds]),
            "ex_nonempty_gold": accuracy([p.correct for p in nonempty], [p.db_id for p in nonempty]) if nonempty else None,

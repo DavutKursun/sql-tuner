@@ -85,6 +85,15 @@ def test_runner_scores_gold_as_perfect_and_constant_as_wrong(spider):
     assert len(shots) == 2 and len({s[0] for s in shots}) == 2
 
 
+def test_error_types():
+    from sqltuner.runner import error_type
+
+    assert error_type("sqlite: no such column: T3.name") == "unknown column" and error_type("sqlite: no such table: foo") == "unknown table"
+    assert error_type('sqlite: near "FROM": syntax error') == "syntax error" and error_type("sqlite: incomplete input") == "incomplete query"
+    assert error_type("guard: more than one statement") == "guard: more than one statement" and error_type("timeout") == "timeout"
+    assert error_type("sqlite: wrong number of arguments to function substr()") == "sqlite: wrong number of"
+
+
 def test_ex_on_nonempty_gold(spider):
     on_empty_db = [e for e in load_split("train", spider["splits_dir"]) if e.db_empty]
     preds, _ = evaluate(on_empty_db, GoldBackend(["SELECT 'x' WHERE 0"] * len(on_empty_db)), spider["sd"], log=None)
@@ -112,9 +121,23 @@ def test_anthropic_backend_costs_cache_and_cap():
     assert r.text.startswith("```sql") and r.cost_usd == pytest.approx((1000 * 0.10 + 2000 * 0.10 * 0.1 + 50 * 0.50) / 1e6)
     assert calls[0]["system"][0]["cache_control"]["type"] == "ephemeral"
     assert isinstance(calls[0]["messages"][-2]["content"], list)  # the few-shot turn before the question is cached
+    assert "temperature" not in calls[0] and calls[0]["thinking"] == {"type": "disabled"}  # 5.5 models: no sampling parameters
+    assert AnthropicBackend("claude-sonnet-5-5", client=be.client).thinking == {"type": "between_tools"}
     with pytest.raises(BudgetExceeded):
         for _ in range(10):
             be.generate([conv])
+
+
+def test_spend_cap_keeps_the_questions_already_paid_for(spider):
+    class FakeMessages:
+        def create(self, **kw):
+            usage = SimpleNamespace(input_tokens=1000, output_tokens=50, cache_read_input_tokens=0, cache_creation_input_tokens=0)
+            return SimpleNamespace(content=[SimpleNamespace(type="text", text="```sql\nSELECT 1\n```")], usage=usage)
+
+    val = load_split("val", spider["splits_dir"])
+    be = AnthropicBackend("claude-haiku-5-5", max_usd=0.002, client=SimpleNamespace(messages=FakeMessages()))  # $0.000125 a call
+    preds, usage = evaluate(val, be, spider["sd"], chunk=4, log=None)
+    assert 0 < len(preds) < len(val) and len(preds) % 4 == 0 and usage.cost_usd >= 0.002
 
 
 # --- SFT --------------------------------------------------------------------------------------------------------------
