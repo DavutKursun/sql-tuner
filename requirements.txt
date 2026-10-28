@@ -1,0 +1,6 @@
+-r requirements-train.txt
+matplotlib>=3.8
+tabulate>=0.9
+fastapi>=0.115
+uvicorn>=0.30
+gradio>=5.0

@@ -1,0 +1,5 @@
+# Kaggle / GPU training. torch comes preinstalled on Kaggle; locally install it first (pip install torch).
+-r requirements-core.txt
+transformers>=4.57,<6
+peft>=0.17
+accelerate>=1.0

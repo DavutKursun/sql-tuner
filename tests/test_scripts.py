@@ -1,0 +1,86 @@
+"""The script chain on the miniature Spider and the tiny model: download check → build_splits → eval (gold, closed splits
+refused) → train_sft → eval with the adapter → train_grpo from the SFT adapter → compare → Kaggle notebook. Same chain
+as on the real data, so the first real run is not the first run."""
+
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
+
+import build_splits
+import compare
+import download
+import eval_model
+import make_kaggle_notebook
+import train_grpo
+import train_sft
+
+from sqltuner.fixtures import make_spider
+
+
+@pytest.fixture(scope="module")
+def ws(tmp_path_factory, tiny):
+    base = tmp_path_factory.mktemp("ws")
+    make_spider(base / "raw")
+    return {"raw": base / "raw", "splits": base / "splits", "models": base / "models", "out": base / "results", "tiny": tiny}
+
+
+def common(ws):
+    return ["--raw", str(ws["raw"]), "--splits-dir", str(ws["splits"])]
+
+
+def test_download_check(ws, tmp_path, capsys):
+    assert download.main(["--raw", str(tmp_path)]) == 1 and "--fetch hf" in capsys.readouterr().out
+    assert download.main(["--raw", str(ws["raw"])]) == 0
+    facts = capsys.readouterr().out
+    assert '"train_spider.json": 98' in facts and '"test_database": 1' in facts
+
+
+def test_chain(ws):
+    assert build_splits.main(["--raw", str(ws["raw"]), "--out", str(ws["splits"]), "--val-min", "20", "--val-max-dbs", "3"]) == 0
+    s = json.loads((ws["splits"] / "summary.json").read_text())
+    assert s["db_overlap_train_vs_val_dev"] == [] and s["splits"]["val"]["questions"] >= 20
+
+    out = ["--out", str(ws["out"])]
+    assert eval_model.main(["--backend", "gold", "--split", "val", *common(ws), *out]) == 0
+    g = json.loads((ws["out"] / "val" / "gold.json").read_text())
+    assert g["accuracy"]["ex"] == 1.0
+    assert eval_model.main(["--backend", "gold", "--split", "dev", *common(ws), *out]) == 3  # closed without --final
+    assert eval_model.main(["--backend", "gold", "--split", "test", *common(ws), *out]) == 3
+
+    sft_dir = ws["models"] / "sft"
+    assert train_sft.main(["--base", str(ws["tiny"]), "--out", str(sft_dir), "--device", "cpu", "--max-steps", "4", "--batch-size", "2", "--grad-accum", "1",
+                           "--eval-every", "2", "--val-limit", "6", "--no-gc", "--results", str(ws["out"]), *common(ws)]) == 0
+    assert (sft_dir / "adapter_config.json").exists() and (ws["out"] / "train_sft_sft.json").exists()
+
+    assert eval_model.main(["--backend", f"hf:{ws['tiny']}", "--adapter", str(sft_dir), "--split", "val", "--limit", "6", "--device", "cpu",
+                            "--max-new-tokens", "12", "--tag", "tiny-sft", *common(ws), *out]) == 0
+    r = json.loads((ws["out"] / "val" / "tiny-sft.json").read_text())
+    assert r["accuracy"]["n"] == 6 and 0.0 <= r["accuracy"]["ex"] <= 1.0 and "usage" in r
+
+    grpo_dir = ws["models"] / "grpo"
+    assert train_grpo.main(["--base", str(ws["tiny"]), "--sft-adapter", str(sft_dir), "--out", str(grpo_dir), "--device", "cpu", "--steps", "2",
+                            "--prompts-per-step", "2", "--group-size", "2", "--max-new-tokens", "8", "--eval-every", "1", "--eval-questions", "4",
+                            "--micro-batch", "2", "--results", str(ws["out"]), *common(ws)]) == 0
+    log = json.loads((grpo_dir / "grpo_log.json").read_text())
+    assert log["steps"] == 2 and len(log["history"]) == 2 and "val_ex_before" in log and (grpo_dir / "adapter_config.json").exists()
+
+    assert eval_model.main(["--backend", "gold", "--split", "val", "--tag", "gold2", *common(ws), *out]) == 0
+    assert compare.main([str(ws["out"] / "val" / "gold.jsonl"), str(ws["out"] / "val" / "tiny-sft.jsonl"), "--out", str(ws["out"] / "cmp.json")]) == 0
+    c = json.loads((ws["out"] / "cmp.json").read_text())
+    assert c["n"] == 6 and c["diff"] >= 0
+
+
+def test_kaggle_notebook(tmp_path):
+    assert make_kaggle_notebook.main(["--name", "sft", "--user", "someone", "--cmd", "python scripts/train_sft.py --base X", "--out", str(tmp_path)]) == 0
+    nb = json.loads((tmp_path / "sft" / "sql-tuner-sft.ipynb").read_text())
+    meta = json.loads((tmp_path / "sft" / "kernel-metadata.json").read_text())
+    src = "".join(c["source"] for c in nb["cells"])
+    assert "python scripts/train_sft.py --base X" in src and "/kaggle/working/out" in src and "secret" not in src.lower()
+    assert meta["id"] == "someone/sql-tuner-sft" and meta["enable_gpu"] and meta["enable_internet"] and meta["is_private"]

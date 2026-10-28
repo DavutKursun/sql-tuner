@@ -1,0 +1,17 @@
+.env
+data/raw/*
+!data/raw/.gitkeep
+data/splits/*.jsonl
+models/*
+!models/.gitkeep
+kaggle/*/output/
+*.gguf
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.vscode/
+.idea/
+.DS_Store
+scratchpad/

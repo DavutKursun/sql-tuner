@@ -1,0 +1,206 @@
+# sql-tuner — a small open model that writes SQL for your database, trained with SFT + RL on execution
+
+This file is the build spec. Read it fully before writing code. Work milestone by milestone; after each milestone
+stop, show how to run it, and wait for Davut's OK. Do not spawn review or refuter sub-agents; verify with the scripts
+and tests and report directly. Never print any token, key or environment-variable value (only "set: yes/no").
+Run long commands in the foreground or wait on their process id; never write a polling loop that waits for a log
+line. Section 0 says where we are.
+
+## 0. Status (updated 2026-10-28)
+
+**Starter is implemented and tested (34 tests, offline: a miniature Spider and a tiny random model built in code).
+Start at Milestone 1, step 0.**
+
+Implemented in the starter (`sqltuner/`):
+- `config.py` (paths, split rules, base-model candidates, prompt / execution / generation / LoRA / SFT / GRPO rules,
+  API prices, the system prompt)
+- `db.py`: the **safe executor** — read-only SQLite (`mode=ro` + `PRAGMA query_only`), a static guard (exactly one
+  SELECT / WITH statement; no writes, PRAGMA, ATTACH, load_extension), a timeout via the progress handler, a row cap;
+  Spider-style result comparison (multiset unless the gold has ORDER BY, column permutations allowed, floats rounded);
+  schema rendering (CREATE TABLE text + 3 example rows per table, long schemas cut table by table)
+- `hardness.py`: Spider's easy / medium / hard / extra rule re-implemented on the sqlglot AST (validated in M1)
+- `data.py`: locate the Spider release, build `train` / `val` / `dev` / `test`, execute every gold query once, flag
+  failures and empty results, `summary.json`
+- `prompts.py`: chat messages (system + schema + question, optional few-shot from OTHER databases), the SFT target,
+  robust SQL extraction (code fences, unterminated fences, `<think>` blocks, trailing explanations)
+- `metrics.py`: execution accuracy with **two** bootstrap CIs (by question and by database), paired differences,
+  hardness breakdown, majority vote on execution results, and the RL reward with hacking monitors
+- `generate.py`: backends — local Hugging Face model (+ LoRA adapter), Anthropic API (prompt caching, cost per call,
+  spend cap), llama.cpp GGUF (serving), `gold` (oracle for harness tests)
+- `runner.py`: evaluate a backend on a split (greedy or sample-and-vote), summaries, prediction files
+- `sft.py`: LoRA SFT as a plain PyTorch loop (exact label masking, fp16 autocast + GradScaler on CUDA, gradient
+  checkpointing, accumulation, cosine schedule, best-val-loss adapter kept)
+- `grpo.py`: **GRPO written by hand** — group sampling, group-normalised advantages, clipped ratio, k3 KL to the
+  reference (the same network with the adapter switched off), token- or sequence-level loss aggregation,
+  `logits_to_keep` so only completion logits are materialised; per-step monitors (zero-variance groups, KL, length,
+  executed / correct share, hacking flags, generation vs training seconds)
+- `tiny.py` (offline tiny Llama + BPE tokenizer + chat template), `fixtures.py` (miniature Spider), `hub.py`
+- scripts: `download.py` (`--fetch hf|gdrive`, sha256 check, safe unzip), `build_splits.py`, `eval_model.py`
+  (dev / test refused without `--final`), `compare.py` (paired), `train_sft.py`, `train_grpo.py`,
+  `make_kaggle_notebook.py` (kernel + metadata for `kaggle kernels push`; results come back with `kaggle kernels output`)
+- tests: guard cases, read-only / timeout / row cap, result comparison, schema and extraction, hardness, splits are
+  database-disjoint, CIs, reward and flags, gold scores 100%, API backend mocked (cost, cache markers, spend cap),
+  SFT label masking and learning, GRPO maths, **our log-probs equal generate's own scores**, update direction, the
+  whole script chain.
+- NOT yet: `app.py` (FastAPI + Gradio), GGUF export, Dockerfile / Space, plots, DESIGN.md content, model card, GIF.
+
+**Milestone 1, step 0 (do first):** Python 3.11 venv; `pip install torch`; `pip install -r requirements-dev.txt`;
+`pytest -q` (expect 34 passed). Then `python scripts/download.py --fetch hf` and `python scripts/build_splits.py`;
+report the facts against §3.2. Stop.
+
+macOS notes: 8 GB RAM. Local inference of ≤ 0.6B models runs on MPS in fp16; anything ≥ 1.5B and all training run on
+Kaggle (2×T4, 30 GPU-hours a week). If Python ever "quits unexpectedly", it is the OpenMP clash solved in shop-recsys
+(`scripts/fix_openmp_macos.py` there); this project does not use faiss or LightGBM, so it should not happen.
+
+## 1. Goal
+
+A company wants to ask its own database questions in plain language without sending its data to a hosted LLM on
+every query. This project takes a small open model (0.5–1.7B parameters), teaches it SQLite with supervised
+fine-tuning, then improves it with reinforcement learning whose reward is **running the SQL and comparing the result**
+with the correct one, and serves it on a CPU. It measures every step honestly against the base model and against
+Claude with few-shot prompting, including the cost per 1,000 questions.
+
+The README answers: *How often does the small model return the right rows on databases it has never seen (with a
+CI)?* *What did SFT add, what did RL add on top, and what does "sample 8 and vote" add for free?* *How close is it to
+Claude Haiku / Sonnet, at what cost per 1,000 questions and what latency?* *What does it get wrong (hardness, error
+types), and what did the RL try to cheat on?*
+
+Portfolio purpose: modern LLM post-training (LoRA SFT, GRPO with verifiable rewards — the R1 recipe) written by hand,
+reward-hacking analysis, evaluation that clusters by database, safe execution of model-written code, and a cheap
+self-hosted deployment. This is the most asked-about topic in ML interviews right now.
+
+## 2. Non-negotiables
+
+- **Choices on val only.** val = whole Spider training databases held out (cross-database, like dev). Base model,
+  prompt format, epochs, GRPO settings, the saved checkpoint: all chosen on val.
+- **Spider dev is read once** (M4) for the reported numbers, and Spider test likewise if the release contains it.
+  `eval_model.py --split dev|test` needs `--final`; the date and commands go into this file.
+- **Execution accuracy is the metric** (right rows), with a CI by question AND by database; "A beats B" needs a
+  paired CI that excludes 0 (state which level). Exact-match is not used (explain why in DESIGN.md).
+- **The base model and Claude are in every table.** Base zero-shot, base few-shot, SFT, GRPO, GRPO + vote, Claude Haiku
+  3-shot, Claude Sonnet 3-shot (cost-capped).
+- **Model-written SQL never runs outside the safe executor** — in evaluation, in RL, and behind the demo.
+- **Contamination is stated, not ignored.** Spider is public and likely in the base models' pre-training; the README
+  says so, shows the base model's own score as the floor, and the optional M6 fresh set is the remedy.
+- API: the key lives in `.env`; `--max-usd` caps every API run (default 5 USD); report the spend.
+- Kaggle: credentials stay in `~/.kaggle/`; only the username is ever read. Kernels are private.
+
+## 3. Data
+
+### 3.1 Source
+
+Spider 1.0 (Yu et al., EMNLP 2018), CC BY-SA 4.0: cross-database text-to-SQL, 200 SQLite databases. Route 1: the
+Hugging Face mirror `HAL-9001/spider-databases` (re-host of the official `spider_data.zip`, sha256 published) —
+`python scripts/download.py --fetch hf`. Route 2: the official Google Drive file via `gdown`. The script verifies the
+sha256, refuses unsafe zip paths, unzips into `data/raw/`.
+
+### 3.2 Expected facts (verify in M1; report differences)
+
+| Quantity | Expected |
+|---|---|
+| train_spider.json / train_others.json | 7,000 / 1,659 questions |
+| dev.json | 1,034 questions on 20 databases (none shared with train) |
+| test.json + test_database/ | 2,147 questions on 40 databases — present only if the release includes the test set |
+| gold queries that fail or return no rows | a handful; counted and reported |
+| hardness on dev | roughly 25% easy / 40% medium / 20% hard / 15% extra |
+
+### 3.3 Splits
+
+- train = train_spider + train_others minus val databases; val = whole train_spider databases (≥ 600 questions,
+  ≤ 20 databases, very large databases skipped so val stays varied). `summary.json` records the val databases and
+  checks there is no database overlap.
+- Prompt: system prompt + `CREATE TABLE` text + 3 example rows per table + the question; answer in one ```sql block.
+
+## 4. Models and training
+
+| Step | What | Where |
+|---|---|---|
+| Base | candidates in `config.BASE_CANDIDATES` (Qwen2.5-Coder 0.5B / 1.5B Instruct, Qwen3 0.6B / 1.7B; Apache-2.0); chosen in M1 on val (EX, speed, size) | Mac MPS for ≤ 0.6B, Kaggle for larger |
+| SFT | LoRA r 16 on all linear layers, 2 epochs, lr 2e-4, max 2,048 tokens, best val loss kept | Kaggle T4, fp16 |
+| GRPO | from the merged SFT model, new LoRA, G = 8, 4 prompts/step, 300 steps, β 0.02, lr 5e-6, reward 1 / 0.1 / 0 | Kaggle T4 |
+| Vote | sample 8 at T 0.7, execute, majority vote on results (test-time compute, no training) | anywhere |
+| Claude | Haiku 5.5 and Sonnet 5.5, 3-shot from other databases, prompt caching | API, capped |
+
+GRPO is the deep part: measure seconds per step first (5 steps) and size the run to fit one Kaggle session (≤ 9 h);
+if too slow, reduce G or max_new_tokens before reducing steps, and say so.
+
+## 5. Evaluation
+
+- EX on val (all choices) and, once, on dev (+ test): CI by question and by database; by hardness; executed rate;
+  error types (guard refusals, syntax, unknown column, timeout); latency p50 / p95; tokens; cost per 1,000 questions.
+- Paired comparisons: SFT − base, GRPO − SFT, vote − greedy, ours − Haiku, ours − Sonnet.
+- GRPO dynamics: reward, correct share, zero-variance groups, KL, completion length, flag shares per step; val EX
+  every 50 steps; a section on what the policy tried to exploit (empty results, LIMIT, SELECT *, row floods) and how
+  the reward or the data were changed in response (e.g. dropping gold-empty prompts).
+- Error analysis: 30 failures of the final model on val, categorised by hand (schema linking, join path, aggregation,
+  value mismatch, ambiguity in the question, gold arguably wrong).
+- The quantised GGUF model's val EX against fp16 (M5).
+
+## 6. Serving (M5)
+
+- Merge the adapter, convert to GGUF with llama.cpp (`convert_hf_to_gguf.py`), quantise (Q4_K_M and Q8_0), measure val
+  EX for each, serve with llama-cpp-python on CPU.
+- FastAPI: `POST /ask {db, question}` → `{sql, columns, rows (≤ 200), executed, error, latency_ms, model}`;
+  `POST /ask` with an uploaded SQLite file (≤ 20 MB, opened read-only, deleted after the request); `GET /databases`;
+  `GET /health`. The safe executor is the only way SQL runs.
+- Gradio at /ui: "Ask" (pick a Spider dev database or upload your own; question → SQL → rows; show the schema the
+  model saw), "Compare" (base vs SFT vs GRPO on a saved example set), "Evidence" (tables and charts from committed
+  results), "About" (data licence, contamination note, limits, nothing stored).
+- Hugging Face Space, Docker, cpu-basic; latency target p50 < 3 s for a typical question at Q4.
+
+## 7. Repository layout
+
+```
+sql-tuner/
+  app.py (M5)
+  sqltuner/ config, db, hardness, data, prompts, metrics, generate, runner, sft, grpo, tiny, fixtures, hub
+  scripts/ download, build_splits, eval_model, compare, train_sft, train_grpo, make_kaggle_notebook, (M2+) plots,
+           (M5) export_gguf, bench_latency, demo_gif
+  kaggle/<name>/ (generated kernels; outputs gitignored)
+  data/raw (gitignored)  data/splits (jsonl gitignored, summary.json committed)
+  models/ (gitignored)  eval/results/  tests/  docs/DESIGN.md  docs/model_card.md  assets/
+```
+
+## 8. Milestones
+
+**M1 — data, harness, baselines (val only).** Step 0; the §3.2 facts; validate `hardness.py` against the official
+Spider `evaluation.py` (clone taoyds/spider, run its hardness on val + 500 train questions, report agreement; vendor it
+if < 90%); prompt token lengths with each candidate's tokenizer; zero-shot val EX for the candidates (≤ 0.6B on the
+Mac; ≥ 1.5B via one Kaggle kernel); Claude Haiku 3-shot on all of val and Sonnet 3-shot on 300 (cost reported);
+`sample_rows` 0 vs 3 on the leading candidate; choose the base → `eval/results/base_choice.json`. DESIGN.md §1–2.
+**M2 — SFT.** Kaggle kernel; curves; val EX greedy and vote-8; paired vs base; error analysis of 30 failures; push
+nothing to the Hub unless asked — download the kernel output. DESIGN.md §3.
+**M3 — GRPO.** Step timing; the main run; monitors and hacking findings; one ablation (β 0 vs 0.02, or exec bonus 0 vs
+0.1); paired GRPO − SFT and GRPO vs vote; DESIGN.md §4.
+**M4 — final.** dev once (and test once if present) for every row of §5; dev vs val table; DESIGN.md §5, model card,
+README results.
+**M5 — serve and ship.** GGUF, FastAPI + Gradio, upload-your-own-database, latency, Space, GIF, README.
+**M6 — optional.** BIRD mini-dev (harder, dirtier databases); a fresh 100-question set on new databases written after
+the base model's cutoff; DPO on SFT failures vs GRPO; a 3B model with QLoRA.
+
+## 9. Acceptance criteria
+
+- Harness: `gold` scores 100% minus gold failures on every split; the executor refuses writes and multi-statements
+  (tests); val and dev share no database.
+- SFT beats base zero-shot on val, paired CI by question excluding 0 — or the README says it does not.
+- GRPO − SFT on val and dev reported with paired CIs; vote-8 reported next to it.
+- Our best model vs Claude Haiku 3-shot on dev: EX with CIs, cost per 1,000 questions and latency for both.
+- The quantised model loses ≤ 1.5 points of val EX against fp16 — or the README says how much it loses.
+- `/ask` p50 < 3 s on the Space CPU; every response carries the SQL and whether it executed.
+- `pytest` green offline; CI green; README on one screen before setup.
+
+## 10. Out of scope
+
+Multi-turn conversations, write queries (INSERT/UPDATE are refused by design), databases other than SQLite (Postgres
+is a next step), very large schemas needing retrieval of tables (BIRD is the bridge).
+
+## 11. Pitfalls to avoid
+
+- Choosing anything on dev; reading dev "just to see".
+- Comparing models on different questions or different prompt formats without saying so.
+- Few-shot examples from the question's own database (leaks schema-specific patterns).
+- Running model SQL with a writable connection, or without a timeout.
+- Treating questions as independent when the claim is about new databases (use the database-level CI).
+- GRPO with sampling settings (top-k / top-p) that differ from the log-prob computation; the temperature must match.
+- Rewarding "executes" so much that the policy prefers safe wrong queries; watch the executed-but-wrong share.
+- Printing tokens: Kaggle and HF credentials are never echoed; only the Kaggle username is read.

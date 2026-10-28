@@ -1,0 +1,190 @@
+"""Splits, metrics, the evaluation runner, the API backend (mocked), SFT label masking and learning, and the GRPO maths."""
+
+from __future__ import annotations
+
+from dataclasses import replace
+from types import SimpleNamespace
+
+import numpy as np
+import pytest
+
+from sqltuner.config import GRPO, LORA, PROMPT, SFT
+from sqltuner.data import CLOSED_SPLITS, load_split
+from sqltuner.db import ExecResult
+from sqltuner.generate import AnthropicBackend, BudgetExceeded, GoldBackend, HFBackend, Reply, load_model
+from sqltuner.metrics import accuracy, majority_vote, paired, reward
+from sqltuner.prompts import apply_chat_template, messages
+from sqltuner.runner import evaluate, few_shot_pool, summarize
+
+
+# --- splits -----------------------------------------------------------------------------------------------------------
+def test_splits_are_database_disjoint(spider):
+    s = spider["summary"]
+    assert s["db_overlap_train_vs_val_dev"] == [] and len(s["val_dbs"]) >= 1
+    assert s["splits"]["train"]["questions"] > 0 and s["splits"]["dev"]["questions"] == 28 and s["splits"]["test"]["questions"] == 14
+    train = load_split("train", spider["splits_dir"])
+    val = load_split("val", spider["splits_dir"])
+    assert not ({e.db_id for e in train} & {e.db_id for e in val})
+    assert all(e.split == "val" for e in val) and all(e.hardness in ("easy", "medium", "hard", "extra") for e in train)
+    assert set(CLOSED_SPLITS) == {"dev", "test"}
+    with pytest.raises(FileNotFoundError):
+        load_split("val", spider["splits_dir"] / "nope")
+
+
+# --- metrics ----------------------------------------------------------------------------------------------------------
+def test_accuracy_and_paired_intervals():
+    rng = np.random.default_rng(0)
+    dbs = np.repeat(np.arange(20), 25)
+    a = rng.random(500) < 0.6
+    b = rng.random(500) < 0.4
+    acc = accuracy(a, dbs, n_resamples=300)
+    assert acc["ci_case"][0] < acc["ex"] < acc["ci_case"][1] and acc["n_db"] == 20
+    assert (acc["ci_db"][1] - acc["ci_db"][0]) > 0  # database-level interval exists
+    p = paired(a, b, dbs, n_resamples=300)
+    assert p["diff"] == pytest.approx(a.mean() - b.mean()) and p["significant_case"]
+    same = paired(a, a, dbs, n_resamples=50)
+    assert same["diff"] == 0 and not same["significant_case"]
+
+
+def test_majority_vote_and_reward():
+    good = ExecResult(True, [(1,)], ["c"])
+    other = ExecResult(True, [(2,)], ["c"])
+    bad = ExecResult(False, error="sqlite: x")
+    assert majority_vote([bad, other, good, good]) == 2 and majority_vote([bad, bad]) == 0
+    gold = ExecResult(True, [(1,), (2,)], ["c"])
+    assert reward("", bad, gold, "SELECT c FROM t").value == 0.0
+    r = reward("SELECT c FROM t", ExecResult(True, [(2,), (1,)], ["c"]), gold, "SELECT c FROM t")
+    assert r.value == 1.0 and r.correct
+    r = reward("SELECT c FROM t LIMIT 1", ExecResult(True, [], ["c"]), gold, "SELECT c FROM t", exec_bonus=0.1)
+    assert r.value == 0.1 and not r.correct and "empty_result" in r.flags and "added_limit" in r.flags
+    r = reward("DROP TABLE t", ExecResult(False, error="guard: not a query"), gold, "SELECT c FROM t")
+    assert r.value == 0.0 and "guard_refused" in r.flags
+
+
+# --- runner -----------------------------------------------------------------------------------------------------------
+def test_runner_scores_gold_as_perfect_and_constant_as_wrong(spider):
+    val = load_split("val", spider["splits_dir"])
+    preds, usage = evaluate(val, GoldBackend([e.query for e in val]), spider["sd"], log=None)
+    assert all(p.correct for p in preds) and usage.calls == len(val)
+    s = summarize(preds, usage)
+    assert s["accuracy"]["ex"] == 1.0 and s["executed_rate"] == 1.0
+    preds, _ = evaluate(val, GoldBackend(["SELECT 12345"] * len(val)), spider["sd"], log=None)
+    assert np.mean([p.correct for p in preds]) == 0.0 and all(p.executed for p in preds)
+    shots = few_shot_pool(load_split("train", spider["splits_dir"]), spider["sd"], 2)
+    assert len(shots) == 2 and len({s[0] for s in shots}) == 2
+
+
+def test_anthropic_backend_costs_cache_and_cap():
+    calls = []
+
+    class FakeMessages:
+        def create(self, **kw):
+            calls.append(kw)
+            usage = SimpleNamespace(input_tokens=1000, output_tokens=50, cache_read_input_tokens=2000, cache_creation_input_tokens=0)
+            return SimpleNamespace(content=[SimpleNamespace(text="```sql\nSELECT 1\n```")], usage=usage)
+
+    be = AnthropicBackend("claude-haiku-5-5", max_usd=0.0003, client=SimpleNamespace(messages=FakeMessages()))
+    conv = messages("CREATE TABLE t (a INT);", "q", [("CREATE TABLE s (b INT);", "q0", "SELECT b FROM s")])
+    r = be.generate([conv])[0][0]
+    assert r.text.startswith("```sql") and r.cost_usd == pytest.approx((1000 * 0.10 + 2000 * 0.10 * 0.1 + 50 * 0.50) / 1e6)
+    assert calls[0]["system"][0]["cache_control"]["type"] == "ephemeral"
+    assert isinstance(calls[0]["messages"][-2]["content"], list)  # the few-shot turn before the question is cached
+    with pytest.raises(BudgetExceeded):
+        for _ in range(10):
+            be.generate([conv])
+
+
+# --- SFT --------------------------------------------------------------------------------------------------------------
+def test_sft_label_masking_and_learning(spider, tiny, tmp_path):
+
+    from sqltuner.sft import IGNORE, add_lora, build_examples, encode, train_sft
+
+    tok, model, dev = load_model(str(tiny), device="cpu", trainable=True)
+    msgs = messages("CREATE TABLE t (a INT);", "How many?")
+    enc = encode(tok, msgs, "```sql\nSELECT count(*) FROM t\n```")
+    n_prompt = len(tok(apply_chat_template(tok, msgs), add_special_tokens=False)["input_ids"])
+    assert all(x == IGNORE for x in enc.labels[:n_prompt]) and all(x != IGNORE for x in enc.labels[n_prompt:])
+    assert tok.decode([x for x in enc.labels if x != IGNORE]) == "```sql\nSELECT count(*) FROM t\n```" + tok.eos_token
+    train_ex = load_split("train", spider["splits_dir"])[:12]
+    data, stats = build_examples(train_ex, tok, spider["sd"], PROMPT, max_len=4096)
+    assert stats["kept"] == 12 and stats["dropped_too_long"] == 0
+    model = add_lora(model, replace(LORA, r=8, alpha=16))
+    trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    assert 0 < trainable < sum(p.numel() for p in model.parameters())
+    info = train_sft(model, tok, data, data[:4], tmp_path / "sft", "cpu", replace(SFT, epochs=30, lr=1e-2, batch_size=4, grad_accum=1, eval_every=10),
+                     gradient_checkpointing=False, log=None, max_steps=60)
+    losses = [r["val_loss"] for r in info["log"]]
+    assert losses[-1] < 0.7 * losses[0], losses
+    assert (tmp_path / "sft" / "adapter_config.json").exists()
+    be = HFBackend(str(tiny), adapter=str(tmp_path / "sft"), device="cpu", batch_size=4)
+    out = be.generate([msgs, msgs], n=2, temperature=0.7, max_new_tokens=8)
+    assert len(out) == 2 and len(out[0]) == 2 and isinstance(out[0][0], Reply)
+
+
+# --- GRPO -------------------------------------------------------------------------------------------------------------
+def test_advantages_and_loss():
+    import torch
+
+    from sqltuner.grpo import advantages, grpo_loss
+
+    adv, zero = advantages(np.array([1.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.5, 0.5]), np.repeat([0, 1], 4))
+    assert zero == 0.5 and np.allclose(adv[4:], 0) and adv[0] > 0 > adv[1] and abs(adv[:4].sum()) < 1e-9
+    lp = torch.log(torch.tensor([[0.5, 0.25], [0.5, 0.25]]))
+    a = torch.tensor([1.0, -1.0])
+    mask = torch.ones(2, 2)
+    per, kl = grpo_loss(lp, None, lp.clone(), a, mask, beta=0.1, clip_eps=0.2)
+    assert torch.allclose(per, torch.tensor([[-1.0, -1.0], [1.0, 1.0]])) and torch.all(kl == 0)
+    old = lp - 0.5  # ratio e^0.5 ≈ 1.65 is clipped at 1.2 for positive advantages
+    per, _ = grpo_loss(lp, old, None, a, mask, beta=0.0, clip_eps=0.2)
+    assert torch.allclose(per[0], torch.tensor([-1.2, -1.2]), atol=1e-6)
+    ref = lp + 0.3
+    _, kl = grpo_loss(lp, None, ref, a, mask, beta=0.1, clip_eps=0.2)
+    assert torch.all(kl > 0)
+
+
+def test_logprobs_match_generate_and_update_direction(tiny):
+    import torch
+
+    from sqltuner.grpo import Samples, advantages, grpo_loss, grpo_step, sample_groups, token_logprobs
+    from sqltuner.sft import add_lora
+
+    tok, model, _ = load_model(str(tiny), device="cpu")
+    tok.padding_side = "left"
+    prompts = [apply_chat_template(tok, [{"role": "user", "content": "Question one two three"}]), apply_chat_template(tok, [{"role": "user", "content": "Q"}])]
+    enc = tok(prompts, return_tensors="pt", padding=True, add_special_tokens=False)
+    torch.manual_seed(1)
+    out = model.generate(**enc, do_sample=True, temperature=1.0, top_k=0, top_p=1.0, max_new_tokens=5, num_return_sequences=2, output_scores=True,
+                         return_dict_in_generate=True, pad_token_id=tok.pad_token_id, eos_token_id=None)
+    P = enc["input_ids"].shape[1]
+    comp = out.sequences[:, P:]
+    gen_lp = torch.stack([torch.log_softmax(sc.float(), -1).gather(-1, comp[:, t : t + 1]).squeeze(-1) for t, sc in enumerate(out.scores)], 1)
+    seq = torch.cat([enc["input_ids"].repeat_interleave(2, 0), comp], 1)
+    attn = torch.cat([enc["attention_mask"].repeat_interleave(2, 0), torch.ones_like(comp)], 1)
+    s = Samples(seq, attn, (attn.cumsum(1) - 1).clamp(min=0), torch.ones_like(comp), [], np.repeat([0, 1], 2), comp.shape[1], 1.0)
+    with torch.no_grad():
+        assert float((token_logprobs(model, s, slice(0, 4), False) - gen_lp).abs().max()) < 1e-4  # left padding + positions are right
+
+    tok, model, _ = load_model(str(tiny), device="cpu", trainable=True)
+    model = add_lora(model, replace(LORA, r=8, alpha=16, dropout=0.0))
+    torch.manual_seed(0)
+    s = sample_groups(model, tok, prompts, 8, 1.0, 6, "cpu")
+    rewards = np.random.default_rng(0).random(len(s.texts))
+    adv_np, _ = advantages(rewards, s.group)
+    adv, mask = torch.tensor(adv_np, dtype=torch.float32), s.comp_mask.float()
+    model.train()
+    with torch.no_grad():
+        before = (token_logprobs(model, s, slice(0, 16), False) * mask).sum(1)
+    opt = torch.optim.SGD([p for p in model.parameters() if p.requires_grad], lr=0.5)
+    for _ in range(3):
+        opt.zero_grad()
+        per, _ = grpo_loss(token_logprobs(model, s, slice(0, 16), False), None, None, adv, mask, 0.0, 0.2)
+        (per.sum() / mask.sum()).backward()
+        opt.step()
+    with torch.no_grad():
+        after = (token_logprobs(model, s, slice(0, 16), False) * mask).sum(1)
+    assert np.corrcoef(adv_np, (after - before).numpy())[0, 1] > 0.5  # positive-advantage samples become more likely
+
+    opt = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad], lr=1e-3)
+    stats = grpo_step(model, tok, prompts, lambda i, t: (float("S" in t), {"correct": "S" in t, "flags": ("x",) if i == 0 else ()}), opt,
+                      replace(GRPO, group_size=4, max_new_tokens=6, micro_batch=3, beta=0.05), "cpu")
+    assert {"reward", "zero_var_groups", "kl", "loss", "gen_s", "train_s", "flags"} <= set(stats) and stats["kl"] >= 0
