@@ -46,7 +46,8 @@ def main(argv=None) -> int:
     cells = [
         # Kaggle's image ships torchao 0.10, which PEFT >= 0.17 rejects as soon as it builds LoRA layers; nothing here uses it
         cell(f"!git clone --depth 1 -b {a.branch} {REPO} /tmp/sql-tuner\n%cd /tmp/sql-tuner\n!git log -1 --format='commit %h %s'\n"
-             "!pip install -q -r requirements-train.txt && pip uninstall -y -q torchao\n!nvidia-smi --query-gpu=name,memory.total --format=csv"),
+             "!pip install -q -r requirements-train.txt && pip uninstall -y -q torchao\n!nvidia-smi --query-gpu=name,memory.total --format=csv\n"
+             "!python -c \"import torch, transformers, peft; print('torch', torch.__version__, '| transformers', transformers.__version__, '| peft', peft.__version__)\""),
         cell("!python scripts/download.py --fetch hf && python scripts/build_splits.py > /tmp/splits.log && tail -5 /tmp/splits.log"),
         cell(run),
         cell("!mkdir -p /kaggle/working/out && cp -r models eval /kaggle/working/out/ && du -sh /kaggle/working/out/*"),

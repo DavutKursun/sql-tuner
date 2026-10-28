@@ -96,17 +96,20 @@ def batches(data: list[Encoded], batch_size: int, rng: np.random.Generator):
 
 
 def loss_on(model, batch, device, amp=None):
-    """Summed cross-entropy over the target tokens, and their number. `logits_to_keep` gets a boolean mask of the
-    positions followed by a target token, so the vocabulary projection runs only there; `amp` is the autocast dtype."""
+    """Summed cross-entropy over the target tokens, and their number. `logits_to_keep` gets the positions (1D, the
+    union over the batch) that predict a target token, so the vocabulary projection runs only there — a 1D index is
+    what transformers 4.5x and 5.x both accept. Rows with no target at a kept position are ignored. `amp`: autocast dtype."""
     import torch
 
     ids, mask, labels = (t.to(device) for t in batch)
     keep = torch.zeros_like(labels, dtype=torch.bool)
     keep[:, :-1] = labels[:, 1:] != IGNORE  # position t predicts token t + 1
+    pos = keep.any(0).nonzero(as_tuple=True)[0]
     with torch.autocast(device_type="cuda", dtype=amp or torch.float16, enabled=amp is not None):
-        logits = model(input_ids=ids, attention_mask=mask, logits_to_keep=keep).logits.float()  # (target tokens, vocab)
-    tgt = labels[:, 1:][keep[:, :-1]]
-    return torch.nn.functional.cross_entropy(logits, tgt, reduction="sum"), int(tgt.numel())
+        logits = model(input_ids=ids, attention_mask=mask, logits_to_keep=pos).logits.float()  # (batch, kept positions, vocab)
+    tgt = labels[:, pos + 1]
+    loss = torch.nn.functional.cross_entropy(logits.reshape(-1, logits.size(-1)), tgt.reshape(-1), ignore_index=IGNORE, reduction="sum")
+    return loss, int((tgt != IGNORE).sum())
 
 
 def evaluate_loss(model, data: list[Encoded], pad_id: int, device, batch_size: int, amp=None) -> float:

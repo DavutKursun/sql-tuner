@@ -34,7 +34,8 @@ def build_tiny(out_dir: Path, vocab_size: int = 400, hidden: int = 64, layers: i
     tok.decoder = decoders.ByteLevel()
     trainer = trainers.BpeTrainer(vocab_size=vocab_size, special_tokens=SPECIAL, initial_alphabet=pre_tokenizers.ByteLevel.alphabet(), show_progress=False)
     tok.train_from_iterator(CORPUS * 20, trainer=trainer)
-    fast = PreTrainedTokenizerFast(tokenizer_object=tok, pad_token="<|pad|>", eos_token="<|end|>", bos_token=None, unk_token=None)
+    fast = PreTrainedTokenizerFast(tokenizer_object=tok, pad_token="<|pad|>", eos_token="<|end|>", bos_token=None, unk_token=None,
+                                   model_input_names=["input_ids", "attention_mask"])  # like Qwen's: no token_type_ids
     fast.chat_template = CHAT_TEMPLATE
     fast.save_pretrained(out_dir)
     torch.manual_seed(seed)

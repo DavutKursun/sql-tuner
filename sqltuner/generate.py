@@ -141,8 +141,8 @@ class HFBackend(Backend):
             enc = self.tok(texts, return_tensors="pt", padding=True, add_special_tokens=False).to(self.device)
             t0 = time.perf_counter()
             with torch.no_grad():
-                gen = self.model.generate(**enc, max_new_tokens=max_new_tokens, **sampling_kwargs(temperature), num_return_sequences=n,
-                                          pad_token_id=self.tok.pad_token_id)
+                gen = self.model.generate(input_ids=enc["input_ids"], attention_mask=enc["attention_mask"], max_new_tokens=max_new_tokens,
+                                          **sampling_kwargs(temperature), num_return_sequences=n, pad_token_id=self.tok.pad_token_id)
             ms = (time.perf_counter() - t0) * 1000 / (len(convs) * n)
             new = gen[:, enc["input_ids"].shape[1] :]
             prompt_lens = enc["attention_mask"].sum(1).tolist()

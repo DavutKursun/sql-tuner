@@ -3,10 +3,15 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        transformers: ["latest", "4.57.1"]  # 4.57: the 4.x line Kaggle's image keeps (it satisfies >=4.57, so pip does not upgrade it)
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.11", cache: pip }
       - run: pip install torch --index-url https://download.pytorch.org/whl/cpu
       - run: pip install -r requirements-dev.txt
+      - if: matrix.transformers != 'latest'
+        run: pip install "transformers==${{ matrix.transformers }}"
       - run: pytest -q
