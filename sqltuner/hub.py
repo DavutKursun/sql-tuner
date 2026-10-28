@@ -6,7 +6,7 @@ from __future__ import annotations
 from pathlib import Path
 
 
-def push_folder(folder: Path, repo_id: str, private: bool = False, message: str = "upload adapter") -> str:
+def push_folder(folder: Path, repo_id: str, private: bool = True, message: str = "upload adapter") -> str:
     from huggingface_hub import HfApi
 
     api = HfApi()

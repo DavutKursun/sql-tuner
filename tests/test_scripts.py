@@ -57,11 +57,13 @@ def test_chain(ws):
 
     sft_dir = ws["models"] / "sft"
     assert train_sft.main(["--base", str(ws["tiny"]), "--out", str(sft_dir), "--device", "cpu", "--max-steps", "4", "--batch-size", "2", "--grad-accum", "1",
-                           "--eval-every", "2", "--val-limit", "6", "--no-gc", "--results", str(ws["out"]), *common(ws)]) == 0
+                           "--eval-every", "2", "--val-limit", "6", "--no-gc", "--max-len", "auto", "--results", str(ws["out"]), *common(ws)]) == 0
     assert (sft_dir / "adapter_config.json").exists() and (ws["out"] / "train_sft_sft.json").exists()
     train = load_split("train", ws["splits"])
-    st = json.loads((ws["out"] / "train_sft_sft.json").read_text())["train_stats"]
+    sft_log = json.loads((ws["out"] / "train_sft_sft.json").read_text())
+    st = sft_log["train_stats"]
     assert st["kept"] + st["dropped_too_long"] == sum(e.gold_ok for e in train) and sum(e.db_empty for e in train) == 14  # SFT keeps empty databases
+    assert sft_log["length_budget"]["chosen"] in (2048, 3072, 4096) and sft_log["length_budget"]["batch_size"] == 2 and sft_log["tokens_per_second"] > 0
 
     assert eval_model.main(["--backend", f"hf:{ws['tiny']}", "--adapter", str(sft_dir), "--split", "val", "--limit", "6", "--device", "cpu",
                             "--max-new-tokens", "12", "--tag", "tiny-sft", *common(ws), *out]) == 0

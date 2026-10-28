@@ -95,6 +95,10 @@ self-hosted deployment. This is the most asked-about topic in ML interviews righ
 - **Contamination is stated, not ignored.** Spider is public and likely in the base models' pre-training; the README
   says so, shows the base model's own score as the floor, and the optional M6 fresh set is the remedy.
 - API: the key lives in `.env`; `--max-usd` caps every API run (default 5 USD); report the spend.
+- **Never `git stash` or copy a working tree before a secret scan of untracked and modified files** (count
+  key-shaped strings and the exact key, never print them; never write a key prefix literally into a tracked file). In M1 a stash taken while the key sat in `.env.example` left a copy in an
+  unreachable git object; it was never pushed and was pruned (`git reflog expire --expire-unreachable=now --all &&
+  git gc --prune=now`).
 - Kaggle: credentials stay in `~/.kaggle/`; only the username is ever read. Kernels are private.
 - **Every model inference and every training run happens in a Kaggle kernel** (GPU T4, internet on, private). The Mac
   only runs Claude Code, git, the Claude API baselines, tests with the tiny model, and light scripts (hardness check,

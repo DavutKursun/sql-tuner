@@ -74,12 +74,12 @@ def sample_groups(model, tok, prompts: list[str], G: int, temperature: float, ma
     return Samples(seq, attn, pos, comp_mask, texts, np.repeat(np.arange(len(prompts)), G), C, temperature)
 
 
-def token_logprobs(model, s: Samples, idx, use_amp: bool):
-    """Log-probabilities of the completion tokens for the samples in `idx`: (len(idx), C)."""
+def token_logprobs(model, s: Samples, idx, amp=None):
+    """Log-probabilities of the completion tokens for the samples in `idx`: (len(idx), C). `amp` = autocast dtype or None."""
     import torch
 
     seq, attn, pos = s.seq[idx], s.attn[idx], s.pos[idx]
-    with torch.autocast(device_type="cuda", dtype=torch.float16, enabled=use_amp):
+    with torch.autocast(device_type="cuda", dtype=amp or torch.float16, enabled=bool(amp)):
         out = model(input_ids=seq, attention_mask=attn, position_ids=pos, logits_to_keep=s.C + 1)
     logits = out.logits[:, :-1].float() / s.temperature  # position P−1+t predicts completion token t; same temperature as sampling
     tgt = seq[:, -s.C :]
@@ -118,11 +118,16 @@ def grpo_loss(lp, old_lp, ref_lp, adv, mask, beta: float, clip_eps: float):
     return (pg + beta * kl) * mask, kl * mask
 
 
-def grpo_step(model, tok, prompts: list[str], reward_fn: Callable[[int, str], tuple[float, dict]], opt, rules: GRPORules, device: str, ref: bool = True) -> dict:
-    """One GRPO update. reward_fn(prompt_index, completion_text) → (reward, info dict with optional 'correct', 'executed', 'flags')."""
+def grpo_step(model, tok, prompts: list[str], reward_fn: Callable[[int, str], tuple[float, dict]], opt, rules: GRPORules, device: str, ref: bool = True,
+              scaler=None) -> dict:
+    """One GRPO update. reward_fn(prompt_index, completion_text) → (reward, info dict with optional 'correct', 'executed', 'flags').
+    `scaler`: the run's GradScaler (needed with fp16 autocast, i.e. on a T4; train_grpo keeps one across steps)."""
     import torch
 
-    use_amp = device == "cuda"
+    from .generate import amp_dtype
+
+    use_amp = amp_dtype(device)  # autocast dtype or None
+    scaler = scaler or torch.amp.GradScaler("cuda", enabled=False)
     t0 = time.perf_counter()
     s = sample_groups(model, tok, prompts, rules.group_size, rules.temperature, rules.max_new_tokens, device)
     t_gen = time.perf_counter() - t0
@@ -159,11 +164,13 @@ def grpo_step(model, tok, prompts: list[str], reward_fn: Callable[[int, str], tu
                 loss = per_tok.sum() / max(tokens_total, 1.0)
             else:
                 loss = (per_tok.sum(1) / mask[sl].sum(1).clamp(min=1)).sum() / n
-            loss.backward()
+            scaler.scale(loss).backward()
             loss_sum += float(loss.detach())
             kl_sum += float(kl.detach().sum())
+        scaler.unscale_(opt)
         torch.nn.utils.clip_grad_norm_(params, 1.0)
-        opt.step()
+        scaler.step(opt)
+        scaler.update()
     t_train = time.perf_counter() - t1
     flags: dict[str, int] = {}
     for _, info in infos:
@@ -185,11 +192,14 @@ def train_grpo(model, tok, prompt_pool: list[str], reward_fn: Callable[[int, str
     torch.manual_seed(seed)
     params = [p for p in model.parameters() if p.requires_grad]
     opt = torch.optim.AdamW(params, lr=rules.lr, weight_decay=0.0)
+    from .generate import amp_dtype
+
+    scaler = torch.amp.GradScaler("cuda", enabled=amp_dtype(device) == torch.float16)  # fp16 (T4) needs loss scaling; bf16 does not
     total = steps or rules.steps
     history, best, t0 = [], -1.0, time.time()
     for step in range(1, total + 1):
         idx = rng.choice(len(prompt_pool), size=min(rules.prompts_per_step, len(prompt_pool)), replace=False)
-        stats = grpo_step(model, tok, [prompt_pool[i] for i in idx], lambda g, text, idx=idx: reward_fn(int(idx[g]), text), opt, rules, device)
+        stats = grpo_step(model, tok, [prompt_pool[i] for i in idx], lambda g, text, idx=idx: reward_fn(int(idx[g]), text), opt, rules, device, scaler=scaler)
         stats["step"] = step
         if eval_fn is not None and (step % rules.eval_every == 0 or step == total):
             stats["val_ex"] = float(eval_fn())

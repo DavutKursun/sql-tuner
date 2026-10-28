@@ -65,14 +65,32 @@ def pick_device(name: str | None = None) -> str:
     return "cpu"
 
 
+def cuda_dtype():
+    """bf16 on GPUs that have it natively (A100, L4, H100: compute capability 8+), else fp16 (T4). torch's own
+    `is_bf16_supported()` also counts emulated bf16 by default, which says True on a T4 and would be very slow there."""
+    import torch
+
+    try:
+        native = torch.cuda.is_bf16_supported(including_emulation=False)
+    except TypeError:  # torch without the argument
+        native = torch.cuda.get_device_capability()[0] >= 8
+    return torch.bfloat16 if native else torch.float16
+
+
+def amp_dtype(device: str):
+    """Autocast dtype for training on `device` (None off CUDA). A GradScaler is needed exactly when this is fp16."""
+    return cuda_dtype() if device == "cuda" else None
+
+
 def load_model(model_id: str, adapter: str | None = None, device: str | None = None, dtype: str = "auto", trainable: bool = False):
-    """Tokenizer + causal LM (+ LoRA adapter). fp16 on CUDA (T4 has no bf16), fp32 on CPU/MPS unless told otherwise."""
+    """Tokenizer + causal LM (+ LoRA adapter). On CUDA bf16 where native, else fp16 (`cuda_dtype`); fp16 for inference
+    on MPS; fp32 on CPU and for training off CUDA."""
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
     device = pick_device(device)
-    if dtype == "auto":  # fp16 on GPUs (T4 has no bf16) and on Apple MPS (an 8 GB Mac cannot hold a 1.5B model in fp32)
-        torch_dtype = torch.float16 if device in ("cuda", "mps") and not trainable else (torch.float16 if device == "cuda" else torch.float32)
+    if dtype == "auto":
+        torch_dtype = cuda_dtype() if device == "cuda" else (torch.float16 if device == "mps" and not trainable else torch.float32)
     else:
         torch_dtype = getattr(torch, dtype)
     tok = AutoTokenizer.from_pretrained(model_id)

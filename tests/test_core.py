@@ -167,6 +167,76 @@ def test_sft_label_masking_and_learning(spider, tiny, tmp_path):
     assert len(out) == 2 and len(out[0]) == 2 and isinstance(out[0][0], Reply)
 
 
+def test_precision_rule(monkeypatch):
+    import torch
+
+    from sqltuner import generate
+
+    # a T4: no native bf16, but torch's default check (emulation included) would say yes
+    monkeypatch.setattr(torch.cuda, "is_bf16_supported", lambda including_emulation=True: including_emulation)
+    assert generate.cuda_dtype() == torch.float16 and generate.amp_dtype("cuda") == torch.float16
+    monkeypatch.setattr(torch.cuda, "is_bf16_supported", lambda including_emulation=True: True)  # A100 / L4 / H100
+    assert generate.cuda_dtype() == torch.bfloat16 and generate.amp_dtype("cpu") is None
+    import inspect
+
+    from sqltuner.hub import push_folder
+
+    assert inspect.signature(push_folder).parameters["private"].default is True  # adapters go to private repos
+
+
+def test_sft_loss_on_target_tokens_only_equals_the_full_loss(tiny):
+    import torch
+
+    from sqltuner.sft import collate, encode, loss_on
+
+    tok, model, _ = load_model(str(tiny), device="cpu")
+    a = encode(tok, messages("CREATE TABLE t (a INT);", "How many?"), "```sql\nSELECT count(*) FROM t\n```")
+    b = encode(tok, messages("CREATE TABLE singer (id INT, name TEXT, age INT);", "Names of singers older than 30?"), "```sql\nSELECT name FROM singer WHERE age > 30\n```")
+    ids, mask, labels = collate([a, b], tok.pad_token_id)  # different lengths: right padding
+    with torch.no_grad():
+        total, n = loss_on(model, (ids, mask, labels), "cpu")
+        hf = model(input_ids=ids, attention_mask=mask, labels=labels).loss  # HF's own shift-and-mask, mean over targets
+    assert n == sum(x != -100 for x in a.labels) + sum(x != -100 for x in b.labels) and torch.allclose(total / n, hf, atol=1e-5)
+
+
+def test_length_budget_choice():
+    from sqltuner.sft import choose_budget
+
+    lengths = [1000] * 90 + [2500] * 8 + [3500] * 2  # 2,048 keeps 90%, 3,072 keeps 98%, 4,096 keeps 100%
+    b, r = choose_budget(lengths, lambda b: None)
+    assert b == 3072 and r["kept_share"] == {2048: 0.9, 3072: 0.98, 4096: 1.0}
+    b, r = choose_budget(lengths, lambda b: {3072: 14.5, 2048: 9.0}[b])  # the 98% budget does not fit: the largest that does
+    assert b == 2048 and r["probe_gib"] == {3072: 14.5, 2048: 9.0}
+    b, _ = choose_budget([5000] * 10 + [100] * 90, lambda b: 3.0)  # nothing reaches 98%: the largest budget, if it fits
+    assert b == 4096
+
+
+def test_memory_probe_leaves_the_weights_alone(tiny):
+    import torch
+
+    from sqltuner.sft import add_lora, encode, memory_probe
+
+    tok, model, _ = load_model(str(tiny), device="cpu", trainable=True)
+    model = add_lora(model, replace(LORA, r=4, alpha=8))
+    data = [encode(tok, messages("CREATE TABLE t (a INT);", f"Question {i}?" + " pad" * i), "```sql\nSELECT a FROM t\n```") for i in range(6)]
+    before = {k: v.clone() for k, v in model.state_dict().items() if "lora" in k}
+    r = memory_probe(model, tok, data, "cpu", steps=3, batch_size=2, gradient_checkpointing=False)
+    assert r["steps"] == 3 and r["tokens"] == sorted(r["tokens"], reverse=True) and r["peak_reserved_gib"] is None
+    assert all(torch.equal(before[k], v) for k, v in model.state_dict().items() if "lora" in k)
+
+
+def test_sft_eta_switches_to_one_epoch(spider, tiny, tmp_path):
+    from sqltuner.sft import add_lora, build_examples, train_sft
+
+    tok, model, _ = load_model(str(tiny), device="cpu", trainable=True)
+    model = add_lora(model, replace(LORA, r=4, alpha=8))
+    data, _ = build_examples(load_split("train", spider["splits_dir"])[:12], tok, spider["sd"], PROMPT, max_len=4096)
+    info = train_sft(model, tok, data, data[:2], tmp_path / "sft", "cpu", replace(SFT, epochs=2, batch_size=4, grad_accum=1, eval_every=100),
+                     gradient_checkpointing=False, log=None, max_hours=1e-9, eta_after=1, log_every=1)
+    assert info["eta"]["switched_to_one_epoch"] and info["epochs_run"] == 1 and info["steps"] == 3  # 12 examples / 4 per step
+    assert [r["step"] for r in info["train_log"]] == [1, 2, 3] and info["log"][0]["step"] == 0 and info["precision"] == "fp32"
+
+
 # --- GRPO -------------------------------------------------------------------------------------------------------------
 def test_advantages_and_loss():
     import torch
@@ -230,7 +300,7 @@ def test_logprobs_match_generate_and_update_direction(tiny):
     attn = torch.cat([enc["attention_mask"].repeat_interleave(2, 0), torch.ones_like(comp)], 1)
     s = Samples(seq, attn, (attn.cumsum(1) - 1).clamp(min=0), torch.ones_like(comp), [], np.repeat([0, 1], 2), comp.shape[1], 1.0)
     with torch.no_grad():
-        assert float((token_logprobs(model, s, slice(0, 4), False) - gen_lp).abs().max()) < 1e-4  # left padding + positions are right
+        assert float((token_logprobs(model, s, slice(0, 4), None) - gen_lp).abs().max()) < 1e-4  # left padding + positions are right
 
     tok, model, _ = load_model(str(tiny), device="cpu", trainable=True)
     model = add_lora(model, replace(LORA, r=8, alpha=16, dropout=0.0))
@@ -241,15 +311,15 @@ def test_logprobs_match_generate_and_update_direction(tiny):
     adv, mask = torch.tensor(adv_np, dtype=torch.float32), s.comp_mask.float()
     model.train()
     with torch.no_grad():
-        before = (token_logprobs(model, s, slice(0, 16), False) * mask).sum(1)
+        before = (token_logprobs(model, s, slice(0, 16), None) * mask).sum(1)
     opt = torch.optim.SGD([p for p in model.parameters() if p.requires_grad], lr=0.5)
     for _ in range(3):
         opt.zero_grad()
-        per, _ = grpo_loss(token_logprobs(model, s, slice(0, 16), False), None, None, adv, mask, 0.0, 0.2)
+        per, _ = grpo_loss(token_logprobs(model, s, slice(0, 16), None), None, None, adv, mask, 0.0, 0.2)
         (per.sum() / mask.sum()).backward()
         opt.step()
     with torch.no_grad():
-        after = (token_logprobs(model, s, slice(0, 16), False) * mask).sum(1)
+        after = (token_logprobs(model, s, slice(0, 16), None) * mask).sum(1)
     assert np.corrcoef(adv_np, (after - before).numpy())[0, 1] > 0.5  # positive-advantage samples become more likely
 
     opt = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad], lr=1e-3)
