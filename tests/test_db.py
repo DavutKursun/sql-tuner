@@ -39,6 +39,16 @@ def test_read_only_timeout_and_row_cap(spider):
     ex.close()
 
 
+def test_row_cap_keeps_large_results_whole(spider):
+    from sqltuner.config import EXEC
+
+    big = "WITH RECURSIVE c(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM c WHERE x < {n}) SELECT x FROM c"
+    r = execute(db(spider), big.format(n=15_000))
+    assert EXEC.max_rows == 200_000 and r.ok and len(r.rows) == 15_000 and not r.truncated  # a 10,000 cap cut such results
+    r = execute(db(spider), big.format(n=EXEC.max_rows + 5))
+    assert r.ok and r.truncated and len(r.rows) == EXEC.max_rows
+
+
 def test_results_match():
     a = ExecResult(True, [(1, "x"), (2, "y")], ["id", "name"])
     b = ExecResult(True, [("y", 2), ("x", 1)], ["name", "id"])
@@ -74,6 +84,8 @@ def test_schema_and_extraction(spider):
     ("SELECT name FROM singer WHERE age > 30", "easy"),
     ("SELECT name, age FROM singer WHERE age > 30 ORDER BY age", "medium"),
     ("SELECT T1.name, count(*) FROM a AS T1 JOIN b AS T2 ON T1.id = T2.aid GROUP BY T1.name", "medium"),
+    ("SELECT name FROM singer WHERE name LIKE '%a%'", "medium"),  # a lone LIKE counts (official evaluation.py)
+    ("SELECT min(age), max(age) FROM singer WHERE a = 1 OR b = 2", "hard"),  # aggregates straight in SELECT count
     ("SELECT name FROM singer WHERE id NOT IN (SELECT singer_id FROM concert)", "hard"),
     ("SELECT name FROM a WHERE x = 1 INTERSECT SELECT name FROM a WHERE y = 2", "hard"),
     ("SELECT T1.name FROM a AS T1 JOIN b AS T2 ON T1.id = T2.aid JOIN c AS T3 ON T2.id = T3.bid WHERE T3.v > (SELECT avg(v) FROM c) GROUP BY T1.name ORDER BY count(*) DESC LIMIT 1", "extra"),

@@ -102,6 +102,10 @@ def main(argv=None, backend_override=None) -> int:
     acc = summary["accuracy"]
     print(f"{tag} on {a.split}: EX {acc['ex']:.4f}  CI by question [{acc['ci_case'][0]:.4f}, {acc['ci_case'][1]:.4f}]  "
           f"CI by database [{acc['ci_db'][0]:.4f}, {acc['ci_db'][1]:.4f}]  n={acc['n']} dbs={acc['n_db']}")
+    ne = summary["ex_nonempty_gold"]
+    if ne:
+        print(f"  non-empty gold: EX {ne['ex']:.4f}  CI by question [{ne['ci_case'][0]:.4f}, {ne['ci_case'][1]:.4f}]  "
+              f"CI by database [{ne['ci_db'][0]:.4f}, {ne['ci_db'][1]:.4f}]  n={ne['n']}")
     print("by hardness:", {k: (v["n"], round(v["ex"], 3) if v["ex"] is not None else None) for k, v in summary["by_hardness"].items()})
     print("executed", round(summary["executed_rate"], 3), "| errors", summary["errors"], "| usage", summary.get("usage"))
     return 0

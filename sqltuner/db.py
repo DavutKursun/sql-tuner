@@ -207,6 +207,15 @@ def table_ddl(conn: sqlite3.Connection) -> list[tuple[str, str]]:
     return out
 
 
+def db_is_empty(db_path: Path) -> bool:
+    """True when every table has zero rows (seven Spider training databases ship as schema only)."""
+    conn = connect_ro(db_path)
+    try:
+        return all(conn.execute(f'SELECT 1 FROM "{name}" LIMIT 1').fetchone() is None for name, _ in table_ddl(conn))
+    finally:
+        conn.close()
+
+
 def render_schema(db_path: Path, rules: PromptRules = PROMPT) -> str:
     """CREATE TABLE statements, each followed by up to `sample_rows` example rows as a comment block."""
     conn = connect_ro(db_path)

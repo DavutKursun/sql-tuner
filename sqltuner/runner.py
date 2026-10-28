@@ -29,16 +29,17 @@ class Prediction:
     error: str | None
     empty: bool
     n_samples: int = 1
+    gold_empty: bool = False  # the gold result has no rows: any query that runs and returns none (same width) matches
 
 
 def few_shot_pool(train: list[Example], spider_dir: Path, k: int, rules: PromptRules = PROMPT, seed: int = SEED) -> list[tuple[str, str, str, str]]:
-    """k (db_id, schema, question, sql) examples from distinct training databases with short schemas."""
+    """k (db_id, schema, question, sql) examples from distinct training databases with short schemas and real rows."""
     if k <= 0:
         return []
     rng = np.random.default_rng(seed)
     by_db: dict[str, list[Example]] = {}
     for e in train:
-        if e.gold_ok and not e.gold_empty and e.hardness in ("medium", "hard"):
+        if e.gold_ok and not e.gold_empty and not e.db_empty and e.hardness in ("medium", "hard"):
             by_db.setdefault(e.db_id, []).append(e)
     dbs = sorted(by_db)
     rng.shuffle(dbs)
@@ -80,7 +81,7 @@ def evaluate(examples: list[Example], backend: Backend, spider_dir: Path, rules:
             g = grade(results[pick], gold, e.query)
             for r in group:
                 usage.add(r)
-            preds.append(Prediction(e.id, e.db_id, e.hardness, e.question, e.query, sqls[pick], g.correct, g.executed, g.error, g.empty, samples))
+            preds.append(Prediction(e.id, e.db_id, e.hardness, e.question, e.query, sqls[pick], g.correct, g.executed, g.error, g.empty, samples, gold.empty))
         if log:
             done = len(preds)
             log(f"  {done:,}/{len(examples):,}  EX so far {np.mean([p.correct for p in preds]):.3f}")
@@ -89,13 +90,18 @@ def evaluate(examples: list[Example], backend: Backend, spider_dir: Path, rules:
 
 
 def summarize(preds: list[Prediction], usage: Usage | None = None, extra: dict | None = None) -> dict:
+    """`accuracy` is EX on every question (Spider's convention); `ex_nonempty_gold` leaves out the questions whose gold
+    result is empty, where a query that runs and returns nothing counts as correct."""
     correct = [p.correct for p in preds]
+    nonempty = [p for p in preds if not p.gold_empty]
     errors: dict[str, int] = {}
     for p in preds:
         if p.error:
             key = p.error.split(":")[0] if not p.error.startswith("sqlite") else "sqlite: " + p.error.split(":", 1)[1].strip().split(" ")[0]
             errors[key] = errors.get(key, 0) + 1
-    out = {"accuracy": accuracy(correct, [p.db_id for p in preds]), "by_hardness": by_hardness(correct, [p.hardness for p in preds]),
+    out = {"accuracy": accuracy(correct, [p.db_id for p in preds]),
+           "ex_nonempty_gold": accuracy([p.correct for p in nonempty], [p.db_id for p in nonempty]) if nonempty else None,
+           "by_hardness": by_hardness(correct, [p.hardness for p in preds]),
            "executed_rate": float(np.mean([p.executed for p in preds])) if preds else 0.0, "no_sql_rate": float(np.mean([not p.pred for p in preds])) if preds else 0.0,
            "errors": dict(sorted(errors.items(), key=lambda kv: -kv[1])[:10])}
     per_db = {}

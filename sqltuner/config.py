@@ -52,7 +52,7 @@ class PromptRules:
 @dataclass(frozen=True)
 class ExecRules:
     timeout_s: float = 5.0
-    max_rows: int = 10_000
+    max_rows: int = 200_000  # results are compared whole; at 10,000 a few Spider gold results (flight_4, baseball_1) were cut
     float_digits: int = 6
 
 
@@ -98,6 +98,7 @@ class GRPORules:
     loss_agg: str = "token"  # "token" = mean over all completion tokens (DAPO); "sequence" = per-sequence mean (GRPO paper)
     micro_batch: int = 4  # sequences per forward/backward when computing log-probs
     exec_bonus: float = 0.1  # reward for SQL that runs but returns the wrong result
+    skip_db_empty: bool = True  # databases with no rows at all: any query that runs and returns nothing (or COUNT = 0) scores
     skip_gold_empty: bool = True  # prompts whose gold result is empty are trivially matched by broken SQL
     eval_every: int = 50
     eval_questions: int = 200

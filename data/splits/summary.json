@@ -4,51 +4,72 @@
       "questions": 8039,
       "databases": 135,
       "hardness": {
-        "easy": 1909,
-        "medium": 2756,
-        "hard": 1825,
-        "extra": 1549
+        "easy": 1833,
+        "medium": 2765,
+        "hard": 1845,
+        "extra": 1596
       },
       "gold_failures": 3,
-      "gold_empty": 1597
+      "gold_empty": 1597,
+      "gold_truncated": 0,
+      "db_empty": 1759,
+      "gold_empty_on_nonempty_dbs": 161
     },
     "val": {
       "questions": 620,
       "databases": 11,
       "hardness": {
-        "extra": 98,
-        "hard": 138,
+        "extra": 103,
+        "hard": 144,
         "medium": 223,
-        "easy": 161
+        "easy": 150
       },
       "gold_failures": 0,
-      "gold_empty": 19
+      "gold_empty": 19,
+      "gold_truncated": 0,
+      "db_empty": 0,
+      "gold_empty_on_nonempty_dbs": 19
     },
     "dev": {
       "questions": 1034,
       "databases": 20,
       "hardness": {
-        "easy": 254,
+        "easy": 248,
         "medium": 444,
-        "hard": 185,
-        "extra": 151
+        "hard": 187,
+        "extra": 155
       },
       "gold_failures": 0,
-      "gold_empty": 49
+      "gold_empty": 49,
+      "gold_truncated": 0,
+      "db_empty": 0,
+      "gold_empty_on_nonempty_dbs": 49
     },
     "test": {
       "questions": 2147,
       "databases": 40,
       "hardness": {
-        "easy": 496,
-        "medium": 851,
-        "hard": 472,
-        "extra": 328
+        "easy": 468,
+        "medium": 853,
+        "hard": 480,
+        "extra": 346
       },
       "gold_failures": 0,
-      "gold_empty": 54
+      "gold_empty": 54,
+      "gold_truncated": 0,
+      "db_empty": 0,
+      "gold_empty_on_nonempty_dbs": 54
     }
   },
+  "empty_dbs": [
+    "academic",
+    "geo",
+    "imdb",
+    "music_2",
+    "restaurants",
+    "scholar",
+    "yelp"
+  ],
   "val_dbs": [
     "cre_Docs_and_Epenses",
     "flight_4",
@@ -68,5 +89,5 @@
     "dev": 4,
     "test": 24
   },
-  "seconds": 11.6
+  "seconds": 9.6
 }

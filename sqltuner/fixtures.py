@@ -11,6 +11,7 @@ import numpy as np
 TRAIN_DBS = ["concert_singer", "pets_1", "shop_1", "school_1", "library_1", "airline_1", "museum_2", "hotel_1"]
 DEV_DBS = ["cars_1", "zoo_1"]
 TEST_DBS = ["bank_1"]
+EMPTY_DBS = ["geo_1"]  # tables but no rows, like Spider's train_others databases (academic, geo, imdb, ...); in train_others
 CITIES = ["Paris", "Rome", "Oslo", "Lima", "Cairo", "Kyoto"]
 
 
@@ -61,15 +62,15 @@ def make_spider(root: Path, seed: int = 0) -> Path:
     sd = Path(root) / "spider_data"
     tables = []
     split_qs = {"train_spider": [], "train_others": [], "dev": [], "test": []}
-    for group, dbs in (("train", TRAIN_DBS), ("dev", DEV_DBS), ("test", TEST_DBS)):
+    for group, dbs in (("train", TRAIN_DBS), ("dev", DEV_DBS), ("test", TEST_DBS), ("empty", EMPTY_DBS)):
         for db in dbs:
             entity = db.rsplit("_", 1)[0] if db[-1].isdigit() else db.split("_")[0]
             entity = entity.replace("_", "")
             folder = "test_database" if group == "test" else "database"
-            _make_db(sd / folder / db / f"{db}.sqlite", entity, rng)
+            _make_db(sd / folder / db / f"{db}.sqlite", entity, rng, n=0 if group == "empty" else 30)
             qs = _questions(db, entity, rng)
-            if group == "train":
-                (split_qs["train_others"] if db == "hotel_1" else split_qs["train_spider"]).extend(qs)
+            if group in ("train", "empty"):
+                (split_qs["train_others"] if db in ("hotel_1", *EMPTY_DBS) else split_qs["train_spider"]).extend(qs)
             else:
                 split_qs[group].extend(qs)
             tables.append({"db_id": db, "table_names_original": [entity, f"{entity}_event"], "table_names": [entity, f"{entity} event"],

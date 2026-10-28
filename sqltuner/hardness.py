@@ -32,18 +32,15 @@ def _count_or(node: exp.Expression | None) -> int:
 
 
 def _shallow(node: exp.Expression | None, kind) -> list[exp.Expression]:
-    """Nodes of `kind` under `node` that are not inside a nested SELECT."""
+    """Nodes of `kind` under `node` (or `node` itself) that are not inside a nested SELECT."""
     if node is None:
         return []
     out = []
     for n in node.find_all(kind):
-        p, nested = n.parent, False
-        while p is not None and p is not node:
-            if isinstance(p, exp.Select):
-                nested = True
-                break
+        p = n
+        while p is not node and not isinstance(p, exp.Select):  # climb until `node` (shallow) or a SELECT (nested)
             p = p.parent
-        if not nested:
+        if p is node:
             out.append(n)
     return out
 

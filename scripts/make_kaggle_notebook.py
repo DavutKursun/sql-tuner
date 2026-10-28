@@ -4,7 +4,7 @@ No secrets are needed: the trained adapter comes back with `kaggle kernels outpu
 
     python scripts/make_kaggle_notebook.py --user <kaggle username> --name sft \
         --cmd "python scripts/train_sft.py --base Qwen/Qwen2.5-Coder-1.5B-Instruct --out models/sft"
-    kaggle kernels push -p kaggle/sft                          # starts the run on a T4 (GPU and internet on)
+    kaggle kernels push -p kaggle/sft --accelerator NvidiaTeslaT4   # starts the run on T4 x2 (GPU and internet on)
     kaggle kernels status <user>/sql-tuner-sft                 # queued / running / complete / error
     kaggle kernels output <user>/sql-tuner-sft -p kaggle/sft/output
 """

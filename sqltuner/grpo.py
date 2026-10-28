@@ -45,11 +45,13 @@ class Samples:
 def sample_groups(model, tok, prompts: list[str], G: int, temperature: float, max_new_tokens: int, device) -> Samples:
     import torch
 
+    from .generate import sampling_kwargs
+
     model.eval()
     tok.padding_side = "left"
     enc = tok(prompts, return_tensors="pt", padding=True, add_special_tokens=False).to(device)
-    with torch.no_grad():
-        out = model.generate(**enc, do_sample=True, temperature=temperature, top_p=1.0, top_k=0, max_new_tokens=max_new_tokens, num_return_sequences=G,
+    with torch.no_grad():  # plain sampling at `temperature` (no top-k / top-p / repetition penalty): token_logprobs scores the same distribution
+        out = model.generate(**enc, **sampling_kwargs(temperature), max_new_tokens=max_new_tokens, num_return_sequences=G,
                              pad_token_id=tok.pad_token_id, eos_token_id=tok.eos_token_id)
     P = enc["input_ids"].shape[1]
     comp = out[:, P:]

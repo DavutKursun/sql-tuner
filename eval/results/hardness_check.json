@@ -1,0 +1,170 @@
+{
+ "official": "taoyds/spider evaluation.py + process_sql.py at commit b7b5b8c (2024-05-29), unmodified: eval_hardness on process_sql's parse of each gold query (database schema opened read-only); nltk 3.10.4",
+ "rule": "keep sqltuner/hardness.py if agreement >= 90% on every split, else vendor the official code",
+ "agreement_before_fix": {
+  "train": 0.9730032346354814,
+  "val": 0.95,
+  "dev": 0.9700193423597679
+ },
+ "fix": "hardness._shallow climbed from a node's parent, so a node that IS the clause (a lone `WHERE x LIKE ...`, an aggregate placed straight in the SELECT list) was taken for nested and not counted; it now starts at the node itself",
+ "agreement_after_fix": {
+  "train": 0.9905449116695696,
+  "val": 0.9919354838709677,
+  "dev": 0.9777562862669246
+ },
+ "after_fix": {
+  "train": {
+   "n": 8039,
+   "parsed": 8038,
+   "agree": 7962,
+   "agreement": 0.9905449116695696,
+   "agree_release": 7962,
+   "confusion_ours_rows_official_cols": {
+    "easy": {
+     "easy": 1833,
+     "medium": 0,
+     "hard": 0,
+     "extra": 0
+    },
+    "medium": {
+     "easy": 0,
+     "medium": 2765,
+     "hard": 0,
+     "extra": 0
+    },
+    "hard": {
+     "easy": 0,
+     "medium": 2,
+     "hard": 1779,
+     "extra": 64
+    },
+    "extra": {
+     "easy": 0,
+     "medium": 8,
+     "hard": 2,
+     "extra": 1585
+    }
+   },
+   "ours": {
+    "easy": 1833,
+    "medium": 2765,
+    "hard": 1845,
+    "extra": 1596
+   },
+   "official": {
+    "easy": 1833,
+    "medium": 2775,
+    "hard": 1781,
+    "extra": 1649
+   },
+   "why": {
+    "others": 72,
+    "comp2": 2,
+    "comp1+others": 2
+   }
+  },
+  "val": {
+   "n": 620,
+   "parsed": 620,
+   "agree": 615,
+   "agreement": 0.9919354838709677,
+   "agree_release": 615,
+   "confusion_ours_rows_official_cols": {
+    "easy": {
+     "easy": 150,
+     "medium": 0,
+     "hard": 0,
+     "extra": 0
+    },
+    "medium": {
+     "easy": 0,
+     "medium": 223,
+     "hard": 0,
+     "extra": 0
+    },
+    "hard": {
+     "easy": 0,
+     "medium": 0,
+     "hard": 140,
+     "extra": 4
+    },
+    "extra": {
+     "easy": 0,
+     "medium": 1,
+     "hard": 0,
+     "extra": 102
+    }
+   },
+   "ours": {
+    "extra": 103,
+    "hard": 144,
+    "medium": 223,
+    "easy": 150
+   },
+   "official": {
+    "extra": 106,
+    "hard": 140,
+    "medium": 224,
+    "easy": 150
+   },
+   "why": {
+    "others": 5
+   }
+  },
+  "dev": {
+   "n": 1034,
+   "parsed": 1034,
+   "agree": 1011,
+   "agreement": 0.9777562862669246,
+   "agree_release": 1011,
+   "confusion_ours_rows_official_cols": {
+    "easy": {
+     "easy": 248,
+     "medium": 0,
+     "hard": 0,
+     "extra": 0
+    },
+    "medium": {
+     "easy": 0,
+     "medium": 444,
+     "hard": 0,
+     "extra": 0
+    },
+    "hard": {
+     "easy": 0,
+     "medium": 0,
+     "hard": 170,
+     "extra": 17
+    },
+    "extra": {
+     "easy": 0,
+     "medium": 2,
+     "hard": 4,
+     "extra": 149
+    }
+   },
+   "ours": {
+    "easy": 248,
+    "medium": 444,
+    "hard": 187,
+    "extra": 155
+   },
+   "official": {
+    "easy": 248,
+    "medium": 446,
+    "hard": 174,
+    "extra": 166
+   },
+   "why": {
+    "others": 19,
+    "comp2": 4
+   }
+  }
+ },
+ "remaining_disagreements": "quirks of the official count_others / get_nestedSQL that are kept out of our port: a NOT condition in WHERE counts as an aggregation (cond_unit[0] is the NOT flag, read by has_agg), so `SELECT count(*) ... WHERE x NOT IN (...)` is extra there and hard here; in HAVING it counts NOT flags and and/or connectors instead of aggregates; a UNION inside a subquery counts once there and twice here",
+ "official_parse_errors": {
+  "train": [
+   "train_spider-3153: KeyError, the gold query uses table Ref_Company_Types, which does not exist (it fails in SQLite too)"
+  ]
+ }
+}

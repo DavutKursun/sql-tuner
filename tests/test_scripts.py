@@ -21,6 +21,7 @@ import make_kaggle_notebook
 import train_grpo
 import train_sft
 
+from sqltuner.data import load_split
 from sqltuner.fixtures import make_spider
 
 
@@ -58,6 +59,9 @@ def test_chain(ws):
     assert train_sft.main(["--base", str(ws["tiny"]), "--out", str(sft_dir), "--device", "cpu", "--max-steps", "4", "--batch-size", "2", "--grad-accum", "1",
                            "--eval-every", "2", "--val-limit", "6", "--no-gc", "--results", str(ws["out"]), *common(ws)]) == 0
     assert (sft_dir / "adapter_config.json").exists() and (ws["out"] / "train_sft_sft.json").exists()
+    train = load_split("train", ws["splits"])
+    st = json.loads((ws["out"] / "train_sft_sft.json").read_text())["train_stats"]
+    assert st["kept"] + st["dropped_too_long"] == sum(e.gold_ok for e in train) and sum(e.db_empty for e in train) == 14  # SFT keeps empty databases
 
     assert eval_model.main(["--backend", f"hf:{ws['tiny']}", "--adapter", str(sft_dir), "--split", "val", "--limit", "6", "--device", "cpu",
                             "--max-new-tokens", "12", "--tag", "tiny-sft", *common(ws), *out]) == 0
@@ -70,11 +74,27 @@ def test_chain(ws):
                             "--micro-batch", "2", "--results", str(ws["out"]), *common(ws)]) == 0
     log = json.loads((grpo_dir / "grpo_log.json").read_text())
     assert log["steps"] == 2 and len(log["history"]) == 2 and "val_ex_before" in log and (grpo_dir / "adapter_config.json").exists()
+    assert log["skipped"]["db_empty"] == 14 and log["pool"] + sum(log["skipped"].values()) == len(train)  # empty databases stay out of RL
 
     assert eval_model.main(["--backend", "gold", "--split", "val", "--tag", "gold2", *common(ws), *out]) == 0
     assert compare.main([str(ws["out"] / "val" / "gold.jsonl"), str(ws["out"] / "val" / "tiny-sft.jsonl"), "--out", str(ws["out"] / "cmp.json")]) == 0
     c = json.loads((ws["out"] / "cmp.json").read_text())
-    assert c["n"] == 6 and c["diff"] >= 0
+    assert c["n"] == 6 and c["diff"] >= 0 and 0 < c["nonempty_gold"]["n"] <= 6
+
+
+def test_grpo_skip_reasons():
+    from dataclasses import replace
+
+    from sqltuner.config import GRPO
+    from sqltuner.data import Example
+
+    def ex(**kw):
+        return Example("x", "train", "d", "q", "SELECT 1", **kw)
+
+    assert train_grpo.skip_reason(ex(gold_ok=False, db_empty=True)) == "gold_failed"
+    assert train_grpo.skip_reason(ex(db_empty=True, gold_empty=False)) == "db_empty"  # e.g. COUNT(*) = 0 on an empty database
+    assert train_grpo.skip_reason(ex(gold_empty=True)) == "gold_empty" and train_grpo.skip_reason(ex()) is None
+    assert train_grpo.skip_reason(ex(db_empty=True), replace(GRPO, skip_db_empty=False)) is None
 
 
 def test_kaggle_notebook(tmp_path):

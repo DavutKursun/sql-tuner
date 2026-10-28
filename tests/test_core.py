@@ -8,8 +8,8 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from sqltuner.config import GRPO, LORA, PROMPT, SFT
-from sqltuner.data import CLOSED_SPLITS, load_split
+from sqltuner.config import GRPO, LORA, PROMPT, SFT, ExecRules, SplitRules
+from sqltuner.data import CLOSED_SPLITS, build_splits, load_split, save_splits
 from sqltuner.db import ExecResult
 from sqltuner.generate import AnthropicBackend, BudgetExceeded, GoldBackend, HFBackend, Reply, load_model
 from sqltuner.metrics import accuracy, majority_vote, paired, reward
@@ -29,6 +29,17 @@ def test_splits_are_database_disjoint(spider):
     assert set(CLOSED_SPLITS) == {"dev", "test"}
     with pytest.raises(FileNotFoundError):
         load_split("val", spider["splits_dir"] / "nope")
+
+
+def test_empty_databases_and_truncated_gold_are_flagged(spider, tmp_path):
+    s = spider["summary"]
+    assert s["empty_dbs"] == ["geo_1"] and s["splits"]["train"]["db_empty"] == 14 and s["splits"]["val"]["db_empty"] == 0
+    train = load_split("train", spider["splits_dir"])
+    assert {e.db_id for e in train if e.db_empty} == {"geo_1"} and any(e.gold_empty for e in train if e.db_empty)
+    assert s["splits"]["train"]["gold_empty_on_nonempty_dbs"] == sum(e.gold_empty and not e.db_empty for e in train)
+    assert s["splits"]["train"]["gold_truncated"] == 0
+    small = save_splits(build_splits(spider["sd"], SplitRules(val_min_questions=20, val_max_dbs=3), log=None, exec_rules=ExecRules(max_rows=5)), tmp_path)
+    assert small["splits"]["train"]["gold_truncated"] > 0  # "List the names of all …" returns 30 rows
 
 
 # --- metrics ----------------------------------------------------------------------------------------------------------
@@ -72,6 +83,18 @@ def test_runner_scores_gold_as_perfect_and_constant_as_wrong(spider):
     assert np.mean([p.correct for p in preds]) == 0.0 and all(p.executed for p in preds)
     shots = few_shot_pool(load_split("train", spider["splits_dir"]), spider["sd"], 2)
     assert len(shots) == 2 and len({s[0] for s in shots}) == 2
+
+
+def test_ex_on_nonempty_gold(spider):
+    on_empty_db = [e for e in load_split("train", spider["splits_dir"]) if e.db_empty]
+    preds, _ = evaluate(on_empty_db, GoldBackend(["SELECT 'x' WHERE 0"] * len(on_empty_db)), spider["sd"], log=None)
+    assert [p.gold_empty for p in preds] == [e.gold_empty for e in on_empty_db]
+    s = summarize(preds)
+    # a query that returns nothing matches every one-column empty gold result (Spider's convention), never a non-empty one
+    assert s["accuracy"]["ex"] > 0 and s["ex_nonempty_gold"]["ex"] == 0
+    assert s["ex_nonempty_gold"]["n"] == sum(not e.gold_empty for e in on_empty_db) > 0 and {"ci_case", "ci_db"} <= set(s["ex_nonempty_gold"])
+    assert summarize([p for p in preds if p.gold_empty])["ex_nonempty_gold"] is None
+    assert not any(db == "geo_1" for db, *_ in few_shot_pool(load_split("train", spider["splits_dir"]), spider["sd"], 9))
 
 
 def test_anthropic_backend_costs_cache_and_cap():
@@ -140,6 +163,28 @@ def test_advantages_and_loss():
     ref = lp + 0.3
     _, kl = grpo_loss(lp, None, ref, a, mask, beta=0.1, clip_eps=0.2)
     assert torch.all(kl > 0)
+
+
+def test_sampling_ignores_the_models_generation_config(tiny):
+    """Qwen2.5-Coder's generation_config carries repetition_penalty 1.05–1.1, top_k and top_p: greedy must still be argmax and
+    GRPO's samples must follow exactly the probabilities that token_logprobs computes."""
+    import torch
+
+    from sqltuner.generate import sampling_kwargs
+
+    tok, model, _ = load_model(str(tiny), device="cpu")
+    for k, v in {"repetition_penalty": 1.3, "top_k": 3, "top_p": 0.5, "temperature": 0.6, "do_sample": True}.items():
+        setattr(model.generation_config, k, v)
+    enc = tok([apply_chat_template(tok, [{"role": "user", "content": "Question one two three"}])], return_tensors="pt", add_special_tokens=False)
+    P = enc["input_ids"].shape[1]
+    for t in (0.0, 0.7, 1.0):
+        torch.manual_seed(0)
+        out = model.generate(**enc, **sampling_kwargs(t), max_new_tokens=6, output_scores=True, return_dict_in_generate=True, pad_token_id=tok.pad_token_id,
+                             eos_token_id=None)
+        with torch.no_grad():
+            raw = model(out.sequences).logits[0, P - 1 : -1].float() / (t or 1.0)
+        got = torch.stack([sc[0].float() for sc in out.scores])
+        assert torch.allclose(torch.log_softmax(raw, -1), torch.log_softmax(got, -1), atol=1e-4), t
 
 
 def test_logprobs_match_generate_and_update_direction(tiny):

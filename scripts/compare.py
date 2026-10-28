@@ -1,5 +1,5 @@
 """Paired comparison of two prediction files on the same questions: difference in EX with CIs by question and by
-database, plus where each one wins (hardness).
+database (also on the questions whose gold result is non-empty), plus where each one wins (hardness).
 
     python scripts/compare.py eval/results/val/A.jsonl eval/results/val/B.jsonl
 """
@@ -31,6 +31,8 @@ def main(argv=None) -> int:
         print("no common questions", file=sys.stderr)
         return 1
     res = paired([pa[i].correct for i in ids], [pb[i].correct for i in ids], [pa[i].db_id for i in ids])
+    ne = [i for i in ids if not pa[i].gold_empty]
+    res["nonempty_gold"] = paired([pa[i].correct for i in ne], [pb[i].correct for i in ne], [pa[i].db_id for i in ne]) | {"n": len(ne)} if ne else None
     by = {}
     for i in ids:
         h = pa[i].hardness

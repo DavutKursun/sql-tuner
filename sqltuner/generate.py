@@ -90,6 +90,15 @@ def load_model(model_id: str, adapter: str | None = None, device: str | None = N
     return tok, model, device
 
 
+def sampling_kwargs(temperature: float) -> dict:
+    """Plain argmax (temperature 0) or plain sampling at `temperature`, whatever the model's generation_config says:
+    Qwen2.5-Coder ships repetition_penalty 1.05–1.1, which generate() would otherwise apply even when greedy. GRPO
+    depends on this too: its samples must come from the distribution whose log-probs it trains on."""
+    if temperature > 0:
+        return {"do_sample": True, "temperature": temperature, "top_p": 1.0, "top_k": 0, "repetition_penalty": 1.0}
+    return {"do_sample": False, "temperature": None, "top_p": None, "top_k": None, "repetition_penalty": 1.0}
+
+
 class HFBackend(Backend):
     name = "hf"
 
@@ -114,8 +123,8 @@ class HFBackend(Backend):
             enc = self.tok(texts, return_tensors="pt", padding=True, add_special_tokens=False).to(self.device)
             t0 = time.perf_counter()
             with torch.no_grad():
-                gen = self.model.generate(**enc, max_new_tokens=max_new_tokens, do_sample=temperature > 0, temperature=temperature if temperature > 0 else None,
-                                          top_p=None, top_k=None, num_return_sequences=n, pad_token_id=self.tok.pad_token_id)
+                gen = self.model.generate(**enc, max_new_tokens=max_new_tokens, **sampling_kwargs(temperature), num_return_sequences=n,
+                                          pad_token_id=self.tok.pad_token_id)
             ms = (time.perf_counter() - t0) * 1000 / (len(convs) * n)
             new = gen[:, enc["input_ids"].shape[1] :]
             prompt_lens = enc["attention_mask"].sum(1).tolist()

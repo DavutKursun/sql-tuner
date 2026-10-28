@@ -32,6 +32,17 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from train_sft import resolve_base
 
 
+def skip_reason(e, rules=GRPO) -> str | None:
+    """Why a training example stays out of the prompt pool (None = it is used); prompt length is checked separately."""
+    if not e.gold_ok:
+        return "gold_failed"
+    if e.db_empty and rules.skip_db_empty:
+        return "db_empty"
+    if e.gold_empty and rules.skip_gold_empty:
+        return "gold_empty"
+    return None
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", required=True)
@@ -50,6 +61,7 @@ def main(argv=None) -> int:
     ap.add_argument("--micro-batch", type=int, default=GRPO.micro_batch)
     ap.add_argument("--exec-bonus", type=float, default=GRPO.exec_bonus)
     ap.add_argument("--keep-gold-empty", action="store_true")
+    ap.add_argument("--keep-db-empty", action="store_true", help="keep questions on databases whose tables are all empty")
     ap.add_argument("--eval-every", type=int, default=GRPO.eval_every)
     ap.add_argument("--eval-questions", type=int, default=GRPO.eval_questions)
     ap.add_argument("--lora-r", type=int, default=LORA.r)
@@ -73,15 +85,13 @@ def main(argv=None) -> int:
     model = add_lora(model, replace(LORA, r=a.lora_r, alpha=2 * a.lora_r))
     rules = replace(GRPO, steps=a.steps, prompts_per_step=a.prompts_per_step, group_size=a.group_size, temperature=a.temperature, max_new_tokens=a.max_new_tokens,
                     lr=a.lr, beta=a.beta, inner_epochs=a.inner_epochs, loss_agg=a.loss_agg, micro_batch=a.micro_batch, exec_bonus=a.exec_bonus,
-                    skip_gold_empty=not a.keep_gold_empty, eval_every=a.eval_every, eval_questions=a.eval_questions)
+                    skip_db_empty=not a.keep_db_empty, skip_gold_empty=not a.keep_gold_empty, eval_every=a.eval_every, eval_questions=a.eval_questions)
     ex = Executor()
-    pool_ex, prompts, skipped = [], [], {"gold_failed": 0, "gold_empty": 0, "too_long": 0}
+    pool_ex, prompts, skipped = [], [], {"gold_failed": 0, "db_empty": 0, "gold_empty": 0, "too_long": 0}
     for e in load_split("train", a.splits_dir):
-        if not e.gold_ok:
-            skipped["gold_failed"] += 1
-            continue
-        if e.gold_empty and rules.skip_gold_empty:
-            skipped["gold_empty"] += 1
+        why = skip_reason(e, rules)
+        if why:
+            skipped[why] += 1
             continue
         sch = schema_text(str(db_path(sd, e.db_id, e.split)), PROMPT.sample_rows, PROMPT.max_cell_chars, PROMPT.max_schema_chars)
         text = apply_chat_template(tok, messages(sch, e.question))

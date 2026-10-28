@@ -48,6 +48,10 @@ Implemented in the starter (`sqltuner/`):
 `pytest -q` (expect 34 passed). Then `python scripts/download.py --fetch hf` and `python scripts/build_splits.py`;
 report the facts against §3.2. Stop.
 
+**Data finding (M1):** seven training databases have no rows at all (all of train_others + music_2; 1,759 questions):
+they are flagged `db_empty`, kept for SFT and left out of the GRPO prompt pool; EX is also reported on non-empty gold
+results (`ex_nonempty_gold`). Details in §3.2.
+
 macOS notes: 8 GB RAM. Local inference of ≤ 0.6B models runs on MPS in fp16; anything ≥ 1.5B and all training run on
 Kaggle (2×T4, 30 GPU-hours a week). If Python ever "quits unexpectedly", it is the OpenMP clash solved in shop-recsys
 (`scripts/fix_openmp_macos.py` there); this project does not use faiss or LightGBM, so it should not happen.
@@ -96,13 +100,21 @@ sha256, refuses unsafe zip paths, unzips into `data/raw/`.
 
 ### 3.2 Expected facts (verify in M1; report differences)
 
-| Quantity | Expected |
-|---|---|
-| train_spider.json / train_others.json | 7,000 / 1,659 questions |
-| dev.json | 1,034 questions on 20 databases (none shared with train) |
-| test.json + test_database/ | 2,147 questions on 40 databases — present only if the release includes the test set |
-| gold queries that fail or return no rows | a handful; counted and reported |
-| hardness on dev | roughly 25% easy / 40% medium / 20% hard / 15% extra |
+| Quantity | Expected | Measured in M1 (2026-10-29) |
+|---|---|---|
+| train_spider.json / train_others.json | 7,000 / 1,659 questions | 7,000 / 1,659 |
+| dev.json | 1,034 questions on 20 databases (none shared with train) | 1,034 on 20; no database shared by any two splits |
+| test.json + test_database/ | 2,147 questions on 40 databases — present only if the release includes the test set | present: 2,147 on 40 |
+| gold queries that fail or return no rows | a handful; counted and reported | fail: 3 (train only). No rows: train 1,597, val 19, dev 49, test 54 — **not a handful in train**, see below |
+| hardness on dev | roughly 25% easy / 40% medium / 20% hard / 15% extra | 248 / 444 / 187 / 155 (ours); the official script gives 248 / 446 / 174 / 166 (97.8% agreement) |
+
+**Empty databases (found in M1).** Every table is empty in all six train_others databases (academic, geo, imdb,
+restaurants, scholar, yelp) and in train_spider's music_2: 1,759 train questions, none in val / dev / test. 1,436 of
+their gold queries return no rows and the other 323 return one row of 0 / NULL (COUNT, AVG …), so on these databases a
+query that runs and returns nothing (or COUNT = 0) matches the gold result. Decisions: `build_splits` marks `db_empty`;
+the GRPO prompt pool leaves these questions out (SFT keeps them; few-shot examples never come from them); summaries
+report EX on all questions (Spider's convention) and `ex_nonempty_gold` on questions whose gold result has rows (val 601
+of 620); the evaluation row cap is 200,000 (no gold result exceeds it; at 10,000, 16 did).
 
 ### 3.3 Splits
 

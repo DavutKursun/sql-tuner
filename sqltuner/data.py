@@ -1,5 +1,5 @@
 """Spider files → our splits. Every split is a list of examples {id, split, db_id, question, query, hardness, gold_ok,
-gold_rows, gold_empty} written as JSONL under data/splits/.
+gold_rows, gold_empty, gold_truncated, db_empty} written as JSONL under data/splits/.
 
   train = Spider train_spider + train_others, minus the held-out validation databases
   val   = whole Spider training databases held out (cross-database, like dev): every choice is made here
@@ -15,8 +15,8 @@ from pathlib import Path
 
 import numpy as np
 
-from .config import RAW, SEED, SPIDER_DIRNAME, SPLIT_RULES, SPLITS, SplitRules
-from .db import Executor
+from .config import EXEC, RAW, SEED, SPIDER_DIRNAME, SPLIT_RULES, SPLITS, ExecRules, SplitRules
+from .db import Executor, db_is_empty
 from .hardness import hardness
 
 SPLIT_NAMES = ("train", "val", "dev", "test")
@@ -34,6 +34,8 @@ class Example:
     gold_ok: bool = True
     gold_rows: int = 0
     gold_empty: bool = False
+    gold_truncated: bool = False  # the gold result has more rows than ExecRules.max_rows
+    db_empty: bool = False  # every table of the database has 0 rows (kept for SFT, left out of the GRPO prompt pool)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -85,7 +87,8 @@ def choose_val_dbs(train: list[dict], rules: SplitRules = SPLIT_RULES, seed: int
     return sorted(chosen)
 
 
-def build_splits(spider_dir: Path, rules: SplitRules = SPLIT_RULES, execute_gold: bool = True, log=print) -> dict[str, list[Example]]:
+def build_splits(spider_dir: Path, rules: SplitRules = SPLIT_RULES, execute_gold: bool = True, log=print,
+                 exec_rules: ExecRules = EXEC) -> dict[str, list[Example]]:
     raw = raw_files(spider_dir)
     val_dbs = set(choose_val_dbs(raw["train_spider"], rules))
     out: dict[str, list[Example]] = {s: [] for s in SPLIT_NAMES}
@@ -94,15 +97,21 @@ def build_splits(spider_dir: Path, rules: SplitRules = SPLIT_RULES, execute_gold
         for i, ex in enumerate(raw[src]):
             s = "val" if split == "train" and ex["db_id"] in val_dbs else split
             out[s].append(Example(id=f"{src}-{i}", split=s, db_id=ex["db_id"], question=ex["question"].strip(), query=ex["query"].strip()))
-    ex_ = Executor()
+    ex_ = Executor(exec_rules)
+    empty: dict[Path, bool] = {}
     for s, items in out.items():
         for e in items:
             e.hardness = hardness(e.query)
+            path = db_path(spider_dir, e.db_id, s)
+            if path not in empty:
+                empty[path] = db_is_empty(path)
+            e.db_empty = empty[path]
             if execute_gold:
-                r = ex_.gold(db_path(spider_dir, e.db_id, s), e.query)
-                e.gold_ok, e.gold_rows, e.gold_empty = r.ok, len(r.rows), r.empty
+                r = ex_.gold(path, e.query)
+                e.gold_ok, e.gold_rows, e.gold_empty, e.gold_truncated = r.ok, len(r.rows), r.empty, r.truncated
         if log and items:
-            log(f"{s:6s} {len(items):6,} questions on {len({e.db_id for e in items}):3d} databases; gold failures {sum(not e.gold_ok for e in items)}")
+            log(f"{s:6s} {len(items):6,} questions on {len({e.db_id for e in items}):3d} databases; gold failures {sum(not e.gold_ok for e in items)}; "
+                f"on empty databases {sum(e.db_empty for e in items)}")
     ex_.close()
     return out
 
@@ -118,7 +127,10 @@ def save_splits(splits: dict[str, list[Example]], out_dir: Path = SPLITS) -> dic
         for e in items:
             hard[e.hardness] = hard.get(e.hardness, 0) + 1
         summary["splits"][s] = {"questions": len(items), "databases": len({e.db_id for e in items}), "hardness": hard,
-                                "gold_failures": sum(not e.gold_ok for e in items), "gold_empty": sum(e.gold_empty for e in items)}
+                                "gold_failures": sum(not e.gold_ok for e in items), "gold_empty": sum(e.gold_empty for e in items),
+                                "gold_truncated": sum(e.gold_truncated for e in items), "db_empty": sum(e.db_empty for e in items),
+                                "gold_empty_on_nonempty_dbs": sum(e.gold_empty and not e.db_empty for e in items)}
+    summary["empty_dbs"] = sorted({e.db_id for items in splits.values() for e in items if e.db_empty})
     summary["val_dbs"] = sorted({e.db_id for e in splits.get("val", [])})
     overlap = {e.db_id for e in splits.get("train", [])} & {e.db_id for e in splits.get("val", []) + splits.get("dev", [])}
     summary["db_overlap_train_vs_val_dev"] = sorted(overlap)
