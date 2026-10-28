@@ -18,6 +18,7 @@ import compare
 import download
 import eval_model
 import make_kaggle_notebook
+import run_hf_job
 import train_grpo
 import train_sft
 
@@ -84,6 +85,16 @@ def test_chain(ws):
     assert c["n"] == 6 and c["diff"] >= 0 and 0 < c["nonempty_gold"]["n"] <= 6
 
 
+def test_hf_job_command(monkeypatch, capsys):
+    monkeypatch.setenv("HF_TOKEN", "hf_FAKEtokenFAKEtokenFAKEtoken0000")
+    assert run_hf_job.main(["--name", "smoke", "--commit", "abc1234", "--cmd", "python scripts/train_grpo.py --base tiny --steps 2", "--dry-run"]) == 0
+    out = capsys.readouterr().out
+    assert "--secrets HF_TOKEN --name" in out and "hf_FAKE" not in out  # the secret's name is passed, never its value
+    assert "--flavor a100-large" in out and "--timeout 8h" in out and run_hf_job.IMAGE in out
+    assert "tar.gz/abc1234" in out and "python scripts/train_grpo.py --base tiny --steps 2" in out
+    assert "private=True" in out and '"DavutKursun/sql-tuner-job-smoke"' in out and "exit $status" in out
+
+
 def test_grpo_skip_reasons():
     from dataclasses import replace
 
@@ -100,9 +111,18 @@ def test_grpo_skip_reasons():
 
 
 def test_kaggle_notebook(tmp_path):
-    assert make_kaggle_notebook.main(["--name", "sft", "--user", "someone", "--cmd", "python scripts/train_sft.py --base X", "--out", str(tmp_path)]) == 0
+    cmds = ["python scripts/train_sft.py --base X", "python scripts/eval_model.py --backend hf:X --adapter models/sft", "python scripts/eval_model.py --samples 8"]
+    assert make_kaggle_notebook.main(["--name", "sft", "--user", "someone", *[x for c in cmds for x in ("--cmd", c)], "--out", str(tmp_path)]) == 0
     nb = json.loads((tmp_path / "sft" / "sql-tuner-sft.ipynb").read_text())
     meta = json.loads((tmp_path / "sft" / "kernel-metadata.json").read_text())
     src = "".join(c["source"] for c in nb["cells"])
-    assert "python scripts/train_sft.py --base X" in src and "/kaggle/working/out" in src and "secret" not in src.lower()
+    assert all(c in src for c in cmds) and "/kaggle/working/out" in src and "secret" not in src.lower() and "pip uninstall -y -q torchao" in src
     assert meta["id"] == "someone/sql-tuner-sft" and meta["enable_gpu"] and meta["enable_internet"] and meta["is_private"]
+    run = nb["cells"][2]["source"].splitlines()
+    assert len(run) == 3 and all(line.startswith("!") and '|| echo "' in line for line in run)  # one shell line per command, each recorded
+    # the status cell: a failed command is reported, not hidden behind Kaggle's "complete"
+    (tmp_path / "status").write_text("1 ok\n2 FAILED\n")
+    report = nb["cells"][4]["source"].replace("/tmp/cmd_status", str(tmp_path / "status")).replace("/kaggle/working/out", str(tmp_path / "out"))
+    exec(report, {})  # noqa: S102 - our own generated cell
+    status = json.loads((tmp_path / "out" / "status.json").read_text())
+    assert [s["status"] for s in status] == ["ok", "FAILED", "not run"] and status[1]["cmd"] == cmds[1]
