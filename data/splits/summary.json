@@ -1,0 +1,72 @@
+{
+  "splits": {
+    "train": {
+      "questions": 8039,
+      "databases": 135,
+      "hardness": {
+        "easy": 1909,
+        "medium": 2756,
+        "hard": 1825,
+        "extra": 1549
+      },
+      "gold_failures": 3,
+      "gold_empty": 1597
+    },
+    "val": {
+      "questions": 620,
+      "databases": 11,
+      "hardness": {
+        "extra": 98,
+        "hard": 138,
+        "medium": 223,
+        "easy": 161
+      },
+      "gold_failures": 0,
+      "gold_empty": 19
+    },
+    "dev": {
+      "questions": 1034,
+      "databases": 20,
+      "hardness": {
+        "easy": 254,
+        "medium": 444,
+        "hard": 185,
+        "extra": 151
+      },
+      "gold_failures": 0,
+      "gold_empty": 49
+    },
+    "test": {
+      "questions": 2147,
+      "databases": 40,
+      "hardness": {
+        "easy": 496,
+        "medium": 851,
+        "hard": 472,
+        "extra": 328
+      },
+      "gold_failures": 0,
+      "gold_empty": 54
+    }
+  },
+  "val_dbs": [
+    "cre_Docs_and_Epenses",
+    "flight_4",
+    "game_1",
+    "insurance_fnol",
+    "loan_1",
+    "local_govt_mdm",
+    "pilot_record",
+    "race_track",
+    "shop_membership",
+    "student_assessment",
+    "tracking_grants_for_research"
+  ],
+  "db_overlap_train_vs_val_dev": [],
+  "duplicate_questions_in_train": {
+    "val": 4,
+    "dev": 4,
+    "test": 24
+  },
+  "seconds": 11.6
+}
