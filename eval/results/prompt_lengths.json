@@ -1,0 +1,85 @@
+{
+ "method": "prompt = tokenizer chat template (system + schema with 3 example rows + question, generation prompt; Qwen3 with enable_thinking=False); sft_seq = prompt + ```sql target + EOS; grpo_too_long = GRPO pool questions (after skip_reason) whose prompt exceeds train_grpo's --max-prompt-tokens 1800",
+ "models": {
+  "Qwen/Qwen2.5-Coder-0.5B-Instruct": {
+   "train": {
+    "prompt_p50": 620,
+    "prompt_p95": 2569,
+    "prompt_max": 4708,
+    "prompt_share_over_2048": 0.106,
+    "sft_seq_share_over_2048": 0.11,
+    "sft_seq_over_2048": 884,
+    "grpo_pool_before_length": 6116,
+    "grpo_too_long_over_1800": 1028
+   },
+   "val": {
+    "prompt_p50": 812,
+    "prompt_p95": 1688,
+    "prompt_max": 1732,
+    "prompt_share_over_2048": 0.0,
+    "sft_seq_share_over_2048": 0.0,
+    "sft_seq_over_2048": 0
+   }
+  },
+  "Qwen/Qwen2.5-Coder-1.5B-Instruct": {
+   "train": {
+    "prompt_p50": 620,
+    "prompt_p95": 2569,
+    "prompt_max": 4708,
+    "prompt_share_over_2048": 0.106,
+    "sft_seq_share_over_2048": 0.11,
+    "sft_seq_over_2048": 884,
+    "grpo_pool_before_length": 6116,
+    "grpo_too_long_over_1800": 1028
+   },
+   "val": {
+    "prompt_p50": 812,
+    "prompt_p95": 1688,
+    "prompt_max": 1732,
+    "prompt_share_over_2048": 0.0,
+    "sft_seq_share_over_2048": 0.0,
+    "sft_seq_over_2048": 0
+   }
+  },
+  "Qwen/Qwen3-0.6B": {
+   "train": {
+    "prompt_p50": 624,
+    "prompt_p95": 2573,
+    "prompt_max": 4712,
+    "prompt_share_over_2048": 0.106,
+    "sft_seq_share_over_2048": 0.1111,
+    "sft_seq_over_2048": 893,
+    "grpo_pool_before_length": 6116,
+    "grpo_too_long_over_1800": 1030
+   },
+   "val": {
+    "prompt_p50": 816,
+    "prompt_p95": 1692,
+    "prompt_max": 1736,
+    "prompt_share_over_2048": 0.0,
+    "sft_seq_share_over_2048": 0.0,
+    "sft_seq_over_2048": 0
+   }
+  },
+  "Qwen/Qwen3-1.7B": {
+   "train": {
+    "prompt_p50": 624,
+    "prompt_p95": 2573,
+    "prompt_max": 4712,
+    "prompt_share_over_2048": 0.106,
+    "sft_seq_share_over_2048": 0.1111,
+    "sft_seq_over_2048": 893,
+    "grpo_pool_before_length": 6116,
+    "grpo_too_long_over_1800": 1030
+   },
+   "val": {
+    "prompt_p50": 816,
+    "prompt_p95": 1692,
+    "prompt_max": 1736,
+    "prompt_share_over_2048": 0.0,
+    "sft_seq_share_over_2048": 0.0,
+    "sft_seq_over_2048": 0
+   }
+  }
+ }
+}

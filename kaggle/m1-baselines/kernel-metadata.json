@@ -1,0 +1,14 @@
+{
+  "id": "davutkursun/sql-tuner-m1-baselines",
+  "title": "sql-tuner-m1-baselines",
+  "code_file": "sql-tuner-m1-baselines.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "dataset_sources": [],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}

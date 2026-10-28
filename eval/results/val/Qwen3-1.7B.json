@@ -1,0 +1,124 @@
+{
+  "accuracy": {
+    "ex": 0.5887096774193549,
+    "ci_case": [
+      0.5531854838709678,
+      0.6274193548387097
+    ],
+    "ci_db": [
+      0.4922153475913001,
+      0.675646177459666
+    ],
+    "n": 620,
+    "n_db": 11
+  },
+  "ex_nonempty_gold": {
+    "ex": 0.5840266222961731,
+    "ci_case": [
+      0.5424292845257903,
+      0.6239600665557404
+    ],
+    "ci_db": [
+      0.4870810121586545,
+      0.6733173239246404
+    ],
+    "n": 601,
+    "n_db": 11
+  },
+  "by_hardness": {
+    "easy": {
+      "n": 150,
+      "ex": 0.8133333333333334
+    },
+    "medium": {
+      "n": 223,
+      "ex": 0.672645739910314
+    },
+    "hard": {
+      "n": 144,
+      "ex": 0.4097222222222222
+    },
+    "extra": {
+      "n": 103,
+      "ex": 0.3300970873786408
+    }
+  },
+  "executed_rate": 0.9193548387096774,
+  "no_sql_rate": 0.0,
+  "errors": {
+    "unknown column": 32,
+    "ambiguous column": 11,
+    "misused aggregate": 5,
+    "sqlite: parser stack overflow": 1,
+    "incomplete query": 1
+  },
+  "by_database": {
+    "cre_Docs_and_Epenses": {
+      "n": 84,
+      "ex": 0.75
+    },
+    "flight_4": {
+      "n": 82,
+      "ex": 0.5853658536585366
+    },
+    "game_1": {
+      "n": 86,
+      "ex": 0.5348837209302325
+    },
+    "insurance_fnol": {
+      "n": 42,
+      "ex": 0.6190476190476191
+    },
+    "loan_1": {
+      "n": 80,
+      "ex": 0.675
+    },
+    "local_govt_mdm": {
+      "n": 14,
+      "ex": 0.35714285714285715
+    },
+    "pilot_record": {
+      "n": 15,
+      "ex": 0.6
+    },
+    "race_track": {
+      "n": 42,
+      "ex": 0.8809523809523809
+    },
+    "shop_membership": {
+      "n": 44,
+      "ex": 0.5227272727272727
+    },
+    "student_assessment": {
+      "n": 53,
+      "ex": 0.5660377358490566
+    },
+    "tracking_grants_for_research": {
+      "n": 78,
+      "ex": 0.3076923076923077
+    }
+  },
+  "usage": {
+    "calls": 620,
+    "prompt_tokens": 553189,
+    "completion_tokens": 25066,
+    "cost_usd": 0.0,
+    "cost_per_1000_questions_usd": 0.0,
+    "latency_ms_p50": 630.6026114999952,
+    "latency_ms_p95": 1567.0055142499991
+  },
+  "backend": "hf:Qwen/Qwen3-1.7B",
+  "adapter": null,
+  "split": "val",
+  "tag": "Qwen3-1.7B",
+  "few_shot": 0,
+  "samples": 1,
+  "sample_rows": 3,
+  "limit": 0,
+  "run_date": "2026-10-28",
+  "minutes": 8.09,
+  "errors_note": "recomputed from the prediction file with runner.error_type (the kernel ran commit 7318f1b, before the error classes)",
+  "device": "cuda",
+  "batch_size": 8,
+  "hardware": "Kaggle Tesla T4, fp16"
+}

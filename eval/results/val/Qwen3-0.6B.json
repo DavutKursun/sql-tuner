@@ -1,0 +1,130 @@
+{
+  "accuracy": {
+    "ex": 0.38548387096774195,
+    "ci_case": [
+      0.34673387096774194,
+      0.4241935483870968
+    ],
+    "ci_db": [
+      0.3116292372881356,
+      0.4596149012567325
+    ],
+    "n": 620,
+    "n_db": 11
+  },
+  "ex_nonempty_gold": {
+    "ex": 0.389351081530782,
+    "ci_case": [
+      0.35108153078202997,
+      0.4243344425956739
+    ],
+    "ci_db": [
+      0.3140982002066228,
+      0.4648749072173951
+    ],
+    "n": 601,
+    "n_db": 11
+  },
+  "by_hardness": {
+    "easy": {
+      "n": 150,
+      "ex": 0.6466666666666666
+    },
+    "medium": {
+      "n": 223,
+      "ex": 0.452914798206278
+    },
+    "hard": {
+      "n": 144,
+      "ex": 0.1875
+    },
+    "extra": {
+      "n": 103,
+      "ex": 0.13592233009708737
+    }
+  },
+  "executed_rate": 0.7790322580645161,
+  "no_sql_rate": 0.0,
+  "errors": {
+    "unknown column": 102,
+    "ambiguous column": 19,
+    "timeout": 4,
+    "incomplete query": 3,
+    "sqlite: parser stack overflow": 3,
+    "unknown table": 2,
+    "sqlite: unrecognized token: \"\"Race_ID\"": 1,
+    "sqlite: unrecognized token: \"\"\"": 1,
+    "misused aggregate": 1,
+    "syntax error": 1
+  },
+  "by_database": {
+    "cre_Docs_and_Epenses": {
+      "n": 84,
+      "ex": 0.42857142857142855
+    },
+    "flight_4": {
+      "n": 82,
+      "ex": 0.3170731707317073
+    },
+    "game_1": {
+      "n": 86,
+      "ex": 0.46511627906976744
+    },
+    "insurance_fnol": {
+      "n": 42,
+      "ex": 0.2857142857142857
+    },
+    "loan_1": {
+      "n": 80,
+      "ex": 0.5125
+    },
+    "local_govt_mdm": {
+      "n": 14,
+      "ex": 0.35714285714285715
+    },
+    "pilot_record": {
+      "n": 15,
+      "ex": 0.5333333333333333
+    },
+    "race_track": {
+      "n": 42,
+      "ex": 0.6190476190476191
+    },
+    "shop_membership": {
+      "n": 44,
+      "ex": 0.2727272727272727
+    },
+    "student_assessment": {
+      "n": 53,
+      "ex": 0.3018867924528302
+    },
+    "tracking_grants_for_research": {
+      "n": 78,
+      "ex": 0.21794871794871795
+    }
+  },
+  "usage": {
+    "calls": 620,
+    "prompt_tokens": 553189,
+    "completion_tokens": 25700,
+    "cost_usd": 0.0,
+    "cost_per_1000_questions_usd": 0.0,
+    "latency_ms_p50": 517.6131295000062,
+    "latency_ms_p95": 1677.3883482499912
+  },
+  "backend": "hf:Qwen/Qwen3-0.6B",
+  "adapter": null,
+  "split": "val",
+  "tag": "Qwen3-0.6B",
+  "few_shot": 0,
+  "samples": 1,
+  "sample_rows": 3,
+  "limit": 0,
+  "run_date": "2026-10-28",
+  "minutes": 7.3,
+  "thinking": null,
+  "stopped_early": false,
+  "device": "cuda",
+  "batch_size": 8,
+  "hardware": "Kaggle Tesla T4, fp16"
+}

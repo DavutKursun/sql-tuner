@@ -1,0 +1,195 @@
+{
+ "chosen": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+ "date": "2026-10-29",
+ "split": "val (620 questions, 11 databases), zero-shot, greedy, 3 example rows per table",
+ "rule": "a 1.5B-class model is preferred if it beats the best <= 0.6B model by more than 5 points of val EX; otherwise the smaller one",
+ "candidates": {
+  "Qwen/Qwen2.5-Coder-0.5B-Instruct": {
+   "params_b": 0.49,
+   "ex": 0.5080645161290323,
+   "ci_case": [
+    0.4693548387096774,
+    0.55
+   ],
+   "ci_db": [
+    0.38976400518341303,
+    0.6149158408799963
+   ],
+   "ex_nonempty_gold": 0.5158069883527454,
+   "executed_rate": 0.7274193548387097,
+   "errors": {
+    "unknown column": 163,
+    "ambiguous column": 3,
+    "misused aggregate": 1,
+    "syntax error": 1,
+    "timeout": 1
+   },
+   "latency_ms_p50_t4_batch8": 255.65045199999759,
+   "minutes_t4": 2.92
+  },
+  "Qwen/Qwen3-0.6B": {
+   "params_b": 0.6,
+   "ex": 0.38548387096774195,
+   "ci_case": [
+    0.34673387096774194,
+    0.4241935483870968
+   ],
+   "ci_db": [
+    0.3116292372881356,
+    0.4596149012567325
+   ],
+   "ex_nonempty_gold": 0.389351081530782,
+   "executed_rate": 0.7790322580645161,
+   "errors": {
+    "unknown column": 102,
+    "ambiguous column": 19,
+    "timeout": 4,
+    "incomplete query": 3,
+    "sqlite: parser stack overflow": 3,
+    "unknown table": 2,
+    "sqlite: unrecognized token: \"\"Race_ID\"": 1,
+    "sqlite: unrecognized token: \"\"\"": 1,
+    "misused aggregate": 1,
+    "syntax error": 1
+   },
+   "latency_ms_p50_t4_batch8": 517.6131295000062,
+   "minutes_t4": 7.3
+  },
+  "Qwen/Qwen2.5-Coder-1.5B-Instruct": {
+   "params_b": 1.54,
+   "ex": 0.6935483870967742,
+   "ci_case": [
+    0.6580241935483871,
+    0.7274193548387097
+   ],
+   "ci_db": [
+    0.5749786121673003,
+    0.7901456047151887
+   ],
+   "ex_nonempty_gold": 0.6955074875207987,
+   "executed_rate": 0.8435483870967742,
+   "errors": {
+    "unknown column": 88,
+    "misused aggregate": 8,
+    "ambiguous column": 1
+   },
+   "latency_ms_p50_t4_batch8": 441.4912821249999,
+   "minutes_t4": 5.32
+  },
+  "Qwen/Qwen3-1.7B": {
+   "params_b": 1.72,
+   "ex": 0.5887096774193549,
+   "ci_case": [
+    0.5531854838709678,
+    0.6274193548387097
+   ],
+   "ci_db": [
+    0.4922153475913001,
+    0.675646177459666
+   ],
+   "ex_nonempty_gold": 0.5840266222961731,
+   "executed_rate": 0.9193548387096774,
+   "errors": {
+    "unknown column": 32,
+    "ambiguous column": 11,
+    "misused aggregate": 5,
+    "sqlite: parser stack overflow": 1,
+    "incomplete query": 1
+   },
+   "latency_ms_p50_t4_batch8": 630.6026114999952,
+   "minutes_t4": 8.09
+  }
+ },
+ "paired": {
+  "1.5B_coder_minus_best_small (0.5B coder)": {
+   "diff": 0.18548387096774194,
+   "ci_case": [
+    0.1435483870967742,
+    0.22741935483870968
+   ],
+   "ci_db": [
+    0.09135509597188429,
+    0.2572865669806156
+   ],
+   "significant_case": true,
+   "significant_db": true,
+   "a_only": 152,
+   "b_only": 37,
+   "n": 620
+  },
+  "top_two: 1.5B_coder_minus_qwen3_1.7B": {
+   "diff": 0.10483870967741936,
+   "ci_case": [
+    0.06451612903225806,
+    0.14677419354838708
+   ],
+   "ci_db": [
+    0.023656058637966226,
+    0.17557017271049735
+   ],
+   "significant_case": true,
+   "significant_db": true,
+   "a_only": 121,
+   "b_only": 56,
+   "n": 620
+  },
+  "1.5B_coder_minus_haiku_3shot": {
+   "diff": -0.15645161290322582,
+   "ci_case": [
+    -0.19197580645161288,
+    -0.11774193548387096
+   ],
+   "ci_db": [
+    -0.23529664443096826,
+    -0.08070508407296455
+   ],
+   "significant_case": true,
+   "significant_db": true,
+   "a_only": 27,
+   "b_only": 124,
+   "n": 620
+  }
+ },
+ "sample_rows_3_minus_0": {
+  "Qwen2.5-Coder-0.5B": {
+   "diff": 0.1032258064516129,
+   "ci_case": [
+    0.07258064516129033,
+    0.13548387096774195
+   ],
+   "ci_db": [
+    0.04855805980215828,
+    0.1610743354888721
+   ],
+   "significant_case": true,
+   "significant_db": true,
+   "a_only": 86,
+   "b_only": 22,
+   "n": 620
+  },
+  "Qwen2.5-Coder-1.5B": {
+   "diff": 0.06774193548387097,
+   "ci_case": [
+    0.03870967741935484,
+    0.09838709677419355
+   ],
+   "ci_db": [
+    0.03070163751504074,
+    0.10556290622098422
+   ],
+   "significant_case": true,
+   "significant_db": true,
+   "a_only": 68,
+   "b_only": 26,
+   "n": 620
+  }
+ },
+ "reasons": [
+  "EX: 69.4% vs 50.8% for the best small model, +18.5 points, paired CI by question [+14.4, +22.7] and by database [+9.1, +25.7] - far past the 5-point rule",
+  "Top two: it beats Qwen3-1.7B by +10.5 points (CI by database [+2.4, +17.6]) while being smaller and faster",
+  "Room to improve: 15.6% of its queries do not run (88 unknown columns - schema linking, which SFT targets) and it trails Claude Haiku 3-shot by 15.6 points, so SFT and RL have a measurable gap to close",
+  "CPU serving: about 3x the compute of the 0.5B per token and ~1 GB at Q4_K_M (est.); the p50 < 3 s target on a 2-vCPU Space is at risk for cold ~800-token prompts, mitigated by reusing the KV cache of the shared system + schema prefix per database - measured in M5",
+  "Licence Apache-2.0; fits T4 fp16 for LoRA SFT and GRPO"
+ ],
+ "kept_prompt_format": "sample_rows 3: +10.3 (0.5B) and +6.8 (1.5B) points over schema-only, both paired CIs exclude 0 at both levels"
+}

@@ -1,0 +1,122 @@
+{
+  "accuracy": {
+    "ex": 0.6935483870967742,
+    "ci_case": [
+      0.6580241935483871,
+      0.7274193548387097
+    ],
+    "ci_db": [
+      0.5749786121673003,
+      0.7901456047151887
+    ],
+    "n": 620,
+    "n_db": 11
+  },
+  "ex_nonempty_gold": {
+    "ex": 0.6955074875207987,
+    "ci_case": [
+      0.6572379367720466,
+      0.7288269550748752
+    ],
+    "ci_db": [
+      0.5805521561771563,
+      0.7889272731308389
+    ],
+    "n": 601,
+    "n_db": 11
+  },
+  "by_hardness": {
+    "easy": {
+      "n": 150,
+      "ex": 0.86
+    },
+    "medium": {
+      "n": 223,
+      "ex": 0.7040358744394619
+    },
+    "hard": {
+      "n": 144,
+      "ex": 0.6597222222222222
+    },
+    "extra": {
+      "n": 103,
+      "ex": 0.47572815533980584
+    }
+  },
+  "executed_rate": 0.8435483870967742,
+  "no_sql_rate": 0.0,
+  "errors": {
+    "unknown column": 88,
+    "misused aggregate": 8,
+    "ambiguous column": 1
+  },
+  "by_database": {
+    "cre_Docs_and_Epenses": {
+      "n": 84,
+      "ex": 0.8095238095238095
+    },
+    "flight_4": {
+      "n": 82,
+      "ex": 0.7195121951219512
+    },
+    "game_1": {
+      "n": 86,
+      "ex": 0.8372093023255814
+    },
+    "insurance_fnol": {
+      "n": 42,
+      "ex": 0.6190476190476191
+    },
+    "loan_1": {
+      "n": 80,
+      "ex": 0.8625
+    },
+    "local_govt_mdm": {
+      "n": 14,
+      "ex": 0.5
+    },
+    "pilot_record": {
+      "n": 15,
+      "ex": 0.7333333333333333
+    },
+    "race_track": {
+      "n": 42,
+      "ex": 0.8809523809523809
+    },
+    "shop_membership": {
+      "n": 44,
+      "ex": 0.4090909090909091
+    },
+    "student_assessment": {
+      "n": 53,
+      "ex": 0.5471698113207547
+    },
+    "tracking_grants_for_research": {
+      "n": 78,
+      "ex": 0.4358974358974359
+    }
+  },
+  "usage": {
+    "calls": 620,
+    "prompt_tokens": 550709,
+    "completion_tokens": 21050,
+    "cost_usd": 0.0,
+    "cost_per_1000_questions_usd": 0.0,
+    "latency_ms_p50": 441.4912821249999,
+    "latency_ms_p95": 996.6478085000006
+  },
+  "backend": "hf:Qwen/Qwen2.5-Coder-1.5B-Instruct",
+  "adapter": null,
+  "split": "val",
+  "tag": "Qwen2.5-Coder-1.5B-Instruct",
+  "few_shot": 0,
+  "samples": 1,
+  "sample_rows": 3,
+  "limit": 0,
+  "run_date": "2026-10-28",
+  "minutes": 5.32,
+  "errors_note": "recomputed from the prediction file with runner.error_type (the kernel ran commit 7318f1b, before the error classes)",
+  "device": "cuda",
+  "batch_size": 8,
+  "hardware": "Kaggle Tesla T4, fp16"
+}

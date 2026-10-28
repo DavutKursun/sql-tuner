@@ -1,0 +1,123 @@
+{
+  "accuracy": {
+    "ex": 0.5064516129032258,
+    "ci_case": [
+      0.4693548387096774,
+      0.5483870967741935
+    ],
+    "ci_db": [
+      0.3882550837320574,
+      0.6142210393295263
+    ],
+    "n": 620,
+    "n_db": 11
+  },
+  "ex_nonempty_gold": {
+    "ex": 0.5141430948419301,
+    "ci_case": [
+      0.47254575707154745,
+      0.5507487520798668
+    ],
+    "ci_db": [
+      0.3936658350769891,
+      0.6286890970736916
+    ],
+    "n": 601,
+    "n_db": 11
+  },
+  "by_hardness": {
+    "easy": {
+      "n": 150,
+      "ex": 0.7333333333333333
+    },
+    "medium": {
+      "n": 223,
+      "ex": 0.515695067264574
+    },
+    "hard": {
+      "n": 144,
+      "ex": 0.4236111111111111
+    },
+    "extra": {
+      "n": 103,
+      "ex": 0.27184466019417475
+    }
+  },
+  "executed_rate": 0.7290322580645161,
+  "no_sql_rate": 0.0,
+  "errors": {
+    "unknown column": 158,
+    "timeout": 5,
+    "ambiguous column": 3,
+    "misused aggregate": 1,
+    "syntax error": 1
+  },
+  "by_database": {
+    "cre_Docs_and_Epenses": {
+      "n": 84,
+      "ex": 0.5952380952380952
+    },
+    "flight_4": {
+      "n": 82,
+      "ex": 0.47560975609756095
+    },
+    "game_1": {
+      "n": 86,
+      "ex": 0.4883720930232558
+    },
+    "insurance_fnol": {
+      "n": 42,
+      "ex": 0.40476190476190477
+    },
+    "loan_1": {
+      "n": 80,
+      "ex": 0.7375
+    },
+    "local_govt_mdm": {
+      "n": 14,
+      "ex": 0.14285714285714285
+    },
+    "pilot_record": {
+      "n": 15,
+      "ex": 0.5333333333333333
+    },
+    "race_track": {
+      "n": 42,
+      "ex": 0.7857142857142857
+    },
+    "shop_membership": {
+      "n": 44,
+      "ex": 0.5681818181818182
+    },
+    "student_assessment": {
+      "n": 53,
+      "ex": 0.5094339622641509
+    },
+    "tracking_grants_for_research": {
+      "n": 78,
+      "ex": 0.15384615384615385
+    }
+  },
+  "usage": {
+    "calls": 620,
+    "prompt_tokens": 550709,
+    "completion_tokens": 16498,
+    "cost_usd": 0.0,
+    "cost_per_1000_questions_usd": 0.0,
+    "latency_ms_p50": 646.3300417490245,
+    "latency_ms_p95": 1704.5810260024155
+  },
+  "backend": "hf:Qwen/Qwen2.5-Coder-0.5B-Instruct",
+  "adapter": null,
+  "split": "val",
+  "tag": "Qwen2.5-Coder-0.5B-Instruct",
+  "few_shot": 0,
+  "samples": 1,
+  "sample_rows": 3,
+  "limit": 0,
+  "run_date": "2026-10-29",
+  "minutes": 11.18,
+  "device": "mps",
+  "batch_size": 8,
+  "hardware": "Mac (Apple M-series) MPS, fp16"
+}

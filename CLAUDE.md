@@ -6,12 +6,19 @@ and tests and report directly. Never print any token, key or environment-variabl
 Run long commands in the foreground or wait on their process id; never write a polling loop that waits for a log
 line. Section 0 says where we are.
 
-## 0. Status (updated 2026-10-28)
+## 0. Status (updated 2026-10-29)
 
-**Starter is implemented and tested (34 tests, offline: a miniature Spider and a tiny random model built in code).
-Start at Milestone 1, step 0.**
+**M1 done, start at M2.** Base model: **Qwen/Qwen2.5-Coder-1.5B-Instruct** (val EX 69.4% zero-shot; Claude Haiku 5.5
+3-shot 85.0%, Sonnet 5.5 3-shot 94.0% on 300) — `eval/results/base_choice.json`, DESIGN.md §1–2. Prompt keeps 3
+example rows per table (+6.8 points on the 1.5B). Hardness port agrees 99.05 / 99.19 / 97.78% with the official script
+(train / val / dev). Open for M2: SFT `max_len` 2,048 would drop 11% of train (large schemas) — decide on val.
+Harness changes in M1: `db_empty`, `ex_nonempty_gold`, 200k row cap, plain greedy / sampling (no generation_config
+leak), Claude 5.5 API (no temperature, thinking off), error classes. 43 tests.
 
-Implemented in the starter (`sqltuner/`):
+The starter (before M1) was implemented and tested with 34 tests, offline (a miniature Spider and a tiny random model
+built in code):
+
+Implemented (`sqltuner/`):
 - `config.py` (paths, split rules, base-model candidates, prompt / execution / generation / LoRA / SFT / GRPO rules,
   API prices, the system prompt)
 - `db.py`: the **safe executor** — read-only SQLite (`mode=ro` + `PRAGMA query_only`), a static guard (exactly one

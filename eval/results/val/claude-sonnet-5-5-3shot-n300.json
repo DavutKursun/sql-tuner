@@ -1,0 +1,120 @@
+{
+  "accuracy": {
+    "ex": 0.94,
+    "ci_case": [
+      0.91,
+      0.9666666666666667
+    ],
+    "ci_db": [
+      0.9079509630067485,
+      0.9666697416974169
+    ],
+    "n": 300,
+    "n_db": 11
+  },
+  "ex_nonempty_gold": {
+    "ex": 0.9393939393939394,
+    "ci_case": [
+      0.9090909090909091,
+      0.9629629629629629
+    ],
+    "ci_db": [
+      0.9072157231927896,
+      0.9661573033707865
+    ],
+    "n": 297,
+    "n_db": 11
+  },
+  "by_hardness": {
+    "easy": {
+      "n": 68,
+      "ex": 0.9411764705882353
+    },
+    "medium": {
+      "n": 117,
+      "ex": 0.9401709401709402
+    },
+    "hard": {
+      "n": 70,
+      "ex": 0.9857142857142858
+    },
+    "extra": {
+      "n": 45,
+      "ex": 0.8666666666666667
+    }
+  },
+  "executed_rate": 0.9966666666666667,
+  "no_sql_rate": 0.0,
+  "errors": {
+    "unknown column": 1
+  },
+  "by_database": {
+    "cre_Docs_and_Epenses": {
+      "n": 37,
+      "ex": 0.972972972972973
+    },
+    "flight_4": {
+      "n": 46,
+      "ex": 0.9782608695652174
+    },
+    "game_1": {
+      "n": 39,
+      "ex": 0.9487179487179487
+    },
+    "insurance_fnol": {
+      "n": 18,
+      "ex": 0.8888888888888888
+    },
+    "loan_1": {
+      "n": 44,
+      "ex": 0.9318181818181818
+    },
+    "local_govt_mdm": {
+      "n": 6,
+      "ex": 0.8333333333333334
+    },
+    "pilot_record": {
+      "n": 4,
+      "ex": 1.0
+    },
+    "race_track": {
+      "n": 19,
+      "ex": 1.0
+    },
+    "shop_membership": {
+      "n": 19,
+      "ex": 1.0
+    },
+    "student_assessment": {
+      "n": 26,
+      "ex": 0.9230769230769231
+    },
+    "tracking_grants_for_research": {
+      "n": 42,
+      "ex": 0.8571428571428571
+    }
+  },
+  "usage": {
+    "calls": 300,
+    "prompt_tokens": 1010114,
+    "completion_tokens": 19713,
+    "cost_usd": 1.1178,
+    "cost_per_1000_questions_usd": 3.7259,
+    "latency_ms_p50": 1129.933895499562,
+    "latency_ms_p95": 1523.240672600514
+  },
+  "backend": "anthropic:claude-sonnet-5-5",
+  "adapter": null,
+  "split": "val",
+  "tag": "claude-sonnet-5-5-3shot-n300",
+  "few_shot": 3,
+  "samples": 1,
+  "sample_rows": 3,
+  "limit": 300,
+  "run_date": "2026-10-29",
+  "minutes": 6.05,
+  "thinking": {
+    "type": "between_tools"
+  },
+  "stopped_early": false
+}

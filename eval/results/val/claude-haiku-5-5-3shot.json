@@ -1,0 +1,121 @@
+{
+  "accuracy": {
+    "ex": 0.85,
+    "ci_case": [
+      0.8225806451612904,
+      0.8774193548387097
+    ],
+    "ci_db": [
+      0.8040401265401265,
+      0.8941585446790106
+    ],
+    "n": 620,
+    "n_db": 11
+  },
+  "ex_nonempty_gold": {
+    "ex": 0.8519134775374376,
+    "ci_case": [
+      0.8236272878535774,
+      0.8818635607321131
+    ],
+    "ci_db": [
+      0.809747119078105,
+      0.8950253203194448
+    ],
+    "n": 601,
+    "n_db": 11
+  },
+  "by_hardness": {
+    "easy": {
+      "n": 150,
+      "ex": 0.9066666666666666
+    },
+    "medium": {
+      "n": 223,
+      "ex": 0.852017937219731
+    },
+    "hard": {
+      "n": 144,
+      "ex": 0.8680555555555556
+    },
+    "extra": {
+      "n": 103,
+      "ex": 0.7378640776699029
+    }
+  },
+  "executed_rate": 0.9951612903225806,
+  "no_sql_rate": 0.0,
+  "errors": {
+    "unknown column": 2,
+    "incomplete query": 1
+  },
+  "by_database": {
+    "cre_Docs_and_Epenses": {
+      "n": 84,
+      "ex": 0.9761904761904762
+    },
+    "flight_4": {
+      "n": 82,
+      "ex": 0.8048780487804879
+    },
+    "game_1": {
+      "n": 86,
+      "ex": 0.8953488372093024
+    },
+    "insurance_fnol": {
+      "n": 42,
+      "ex": 0.8571428571428571
+    },
+    "loan_1": {
+      "n": 80,
+      "ex": 0.875
+    },
+    "local_govt_mdm": {
+      "n": 14,
+      "ex": 0.7142857142857143
+    },
+    "pilot_record": {
+      "n": 15,
+      "ex": 0.7333333333333333
+    },
+    "race_track": {
+      "n": 42,
+      "ex": 0.9047619047619048
+    },
+    "shop_membership": {
+      "n": 44,
+      "ex": 0.7727272727272727
+    },
+    "student_assessment": {
+      "n": 53,
+      "ex": 0.7924528301886793
+    },
+    "tracking_grants_for_research": {
+      "n": 78,
+      "ex": 0.782051282051282
+    }
+  },
+  "usage": {
+    "calls": 620,
+    "prompt_tokens": 2076217,
+    "completion_tokens": 43663,
+    "cost_usd": 0.1153,
+    "cost_per_1000_questions_usd": 0.186,
+    "latency_ms_p50": 904.6684579952853,
+    "latency_ms_p95": 1222.9135285509979
+  },
+  "backend": "anthropic:claude-haiku-5-5",
+  "adapter": null,
+  "split": "val",
+  "tag": "claude-haiku-5-5-3shot",
+  "few_shot": 3,
+  "samples": 1,
+  "sample_rows": 3,
+  "limit": 0,
+  "run_date": "2026-10-29",
+  "minutes": 9.84,
+  "thinking": {
+    "type": "disabled"
+  },
+  "stopped_early": false
+}
