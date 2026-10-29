@@ -63,13 +63,13 @@ def sft_curve(log_path: Path, out: Path) -> None:
         ax.axvline(steps_per_epoch, color=AXIS, linewidth=1, zorder=1)
         ax.text(steps_per_epoch, ax.get_ylim()[1], " epoch 2", color=MUTED, fontsize=8, va="top", ha="left")
     best_step, best = min(((s, v) for s, v in val if s > 0), key=lambda sv: sv[1], default=val[-1])
-    ax.annotate(f"saved adapter: val {best:.3f} at step {best_step}", xy=(best_step, best), xytext=(-12, 26), textcoords="offset points", ha="right",
-                color=INK_2, fontsize=9, arrowprops={"arrowstyle": "-", "color": MUTED, "linewidth": 1})
+    ax.annotate(f"saved adapter: lowest val loss, {best:.3f} at step {best_step}", xy=(best_step, best), xytext=(28, 42), textcoords="offset points",
+                ha="left", va="bottom", color=INK_2, fontsize=9, arrowprops={"arrowstyle": "-", "color": MUTED, "linewidth": 1, "shrinkB": 6})
     ax.set_xlabel("optimiser step", color=INK_2, fontsize=10)
     ax.set_ylabel("cross-entropy per target token", color=INK_2, fontsize=10)
     ax.set_title(f"SFT of {info.get('base', 'the base model').split('/')[-1]}: loss by step ({info.get('epochs_run')} epochs, max_len "
                  f"{info['rules']['max_len']:,})", color=INK, fontsize=11, loc="left", pad=12)
-    leg = ax.legend(frameon=False, fontsize=9, loc="upper right", labelcolor=INK_2)
+    leg = ax.legend(frameon=False, fontsize=9, loc="lower left", labelcolor=INK_2)  # the empty corner: both curves start high
     leg.set_zorder(4)
     fig.tight_layout()
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -112,7 +112,7 @@ def hardness(a: Path, a_label: str, b: Path, b_label: str, out: Path) -> None:
         ax.text(i + gap / 2 + width / 2, vb + 1.5, f"{vb:.0f}", ha="center", va="bottom", color=INK, fontsize=9)  # the story: the trained model
     ax.set_xticks(range(len(levels)), [f"{h}\n(n = {sa['by_hardness'][h]['n']})" for h in levels], color=INK_2)
     ax.set_yticks([0, 25, 50, 75, 100], ["0", "25", "50", "75", "100%"])
-    ax.set_title(f"Execution accuracy on val by Spider hardness: {a_label} {100 * sa['accuracy']['ex']:.1f}% → {b_label} {100 * sb['accuracy']['ex']:.1f}%",
+    ax.set_title(f"Execution accuracy on val by Spider hardness: {a_label} {100 * sa['accuracy']['ex']:.1f}%, {b_label} {100 * sb['accuracy']['ex']:.1f}%",
                  color=INK, fontsize=11, loc="left", pad=12)
     handles = [Rectangle((0, 0), 1, 1, facecolor=SLOT[0]), Rectangle((0, 0), 1, 1, facecolor=SLOT[1])]
     ax.legend(handles, [a_label, b_label], frameon=False, fontsize=9, loc="upper right", labelcolor=INK_2)

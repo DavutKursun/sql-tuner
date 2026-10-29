@@ -5,7 +5,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        transformers: ["latest", "4.57.1"]  # 4.57: the 4.x line Kaggle's image keeps (it satisfies >=4.57, so pip does not upgrade it)
+        # Kaggle keeps its preinstalled transformers (5.16.1 in M2: it satisfies >=4.57, so pip does not upgrade it), and
+        # its logits_to_keep takes only an int or a 1D index; 4.57.1 is the floor requirements-train allows
+        transformers: ["latest", "5.16.1", "4.57.1"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

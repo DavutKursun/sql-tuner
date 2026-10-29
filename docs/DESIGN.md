@@ -136,7 +136,121 @@ The 0.5B ran twice, on the Mac (MPS) and on a T4. The two runs graded 1 of 620 q
 are stable across hardware.
 
 ## 3. Supervised fine-tuning (M2)
-Label masking, LoRA settings, curves, val EX greedy and vote-8, paired vs base, 30 failures categorised.
+
+**Setup.** Base model: Qwen2.5-Coder-1.5B-Instruct. LoRA r 16 (α 32, dropout 0.05) on every linear layer of the
+blocks trains 18.5M of 1.56B parameters (1.18%). The prompt is unchanged from M1: the system prompt, `CREATE TABLE`
+text with 3 example rows per table, and the question. The loss covers only the target (```` ```sql … ``` ```` plus the end
+token): prompt tokens get label −100, and logits are computed only at the positions that predict a target token. A
+4,096-token prompt over a 151,936-word vocabulary would otherwise materialise about 2.5 GB of fp32 logits per sequence.
+A test checks the loss equals the library's own. Training uses AdamW at lr 2e-4 with a cosine schedule and 3% warm-up,
+gradient clipping at 1.0, and batch 2 × accumulation 8 = 16 sequences per step, for 2 epochs (996 steps). The run took
+fp16 autocast + GradScaler on a Kaggle T4; on GPUs with native bf16 it takes bf16 without a scaler. (`torch.cuda.
+is_bf16_supported()` counts emulation by default and says True on a T4; the code asks for native support only.)
+
+**Length budget.** At `max_len` 2,048, 3,072 and 4,096 tokens the share of train kept is 89.0%, 96.9% and 98.98%. The
+long examples are the large schemas, which are the ones most like a real company database, so the budget is the
+smallest that keeps ≥ 98%, provided a memory probe fits. The probe ran 3 optimiser steps on the longest kept examples
+(3,695 / 3,693 / 3,663 tokens) at batch 1 with gradient checkpointing. It peaked at 6.7 GiB reserved (6.0 GiB allocated),
+and at 11.1 GiB at the training batch of 2, both under the 14 GiB limit. So `max_len` is 4,096: 7,954 examples train
+and 82 are dropped.
+
+**The run** (`eval/results/train_sft_sft.json`, adapter in the private Hub repo `DavutKursun/sql-tuner-sft`):
+
+![SFT loss by step](../assets/sft_curve.png)
+
+| step | epoch | train loss (since last check) | val loss | minutes |
+|---:|---:|---:|---:|---:|
+| 0 | 0.00 | – | 0.3283 | 0 |
+| 100 | 0.20 | 0.2007 | 0.1657 | 27 |
+| **200** | 0.40 | 0.1281 | **0.1570** | 54 |
+| 400 | 0.80 | 0.0887 | 0.1602 | 107 |
+| 600 | 1.21 | 0.0493 | 0.1724 | 160 |
+| 800 | 1.61 | 0.0411 | 0.1852 | 214 |
+| 996 | 2.00 | 0.0365 | 0.1918 | 266 |
+
+After 20 steps the ETA was 4.49 h (15.3 s per step), under the 9.5 h limit, so both epochs ran: 266 minutes, 15.6M
+tokens, 975 tokens/s on the wall clock with the val checks included. Val loss bottoms out at step 200, 0.4 epochs in,
+and climbs from there, while train loss keeps falling and drops sharply when the data repeat at the epoch boundary: the
+model memorises the training questions. The rule keeps the lowest-val-loss adapter, so **the evaluated model is the
+step-200 checkpoint**. Val loss is only a proxy, though. Whether a later checkpoint has higher execution accuracy was
+not measured, because only the best one is saved. Choosing by val EX is the better rule, and GRPO already uses it (§4).
+
+**Results on val** (620 questions, 11 databases; EX in %; 95% bootstrap CIs; T4, fp16, batch 8):
+
+| Model | EX | ex_nonempty_gold | CI by question | CI by database | Executed | p50 latency |
+|---|---:|---:|---|---|---:|---:|
+| Base, zero-shot | 69.4 | 69.6 | [65.8, 72.7] | [57.5, 79.0] | 84.4 | 0.44 s |
+| **SFT, greedy** | **74.0** | 73.7 | [70.5, 77.4] | [66.4, 80.8] | 91.9 | 0.77 s |
+| **SFT, sample 8 and vote** | **78.7** | 78.4 | [75.5, 81.9] | [72.2, 84.8] | 98.5 | 3.41 s |
+| Claude Haiku 5.5, 3-shot | 85.0 | 85.2 | [82.3, 87.7] | [80.4, 89.4] | 99.5 | 0.90 s |
+
+Latency is per question, amortised over a batch. Vote-8 generates 8 samples per question at T 0.7. SFT greedy is slower
+than base because the LoRA adapter runs unmerged; serving merges it (M5).
+
+| Paired (same questions) | Difference | CI by question | CI by database |
+|---|---:|---|---|
+| SFT − base | +4.7 | [+1.1, +8.7] | [−2.1, +12.0] |
+| vote-8 − SFT greedy | +4.7 | [+2.3, +7.1] | [+2.7, +7.2] |
+| SFT − Haiku 3-shot | −11.0 | [−14.4, −7.3] | [−15.6, −6.4] |
+| vote-8 − Haiku 3-shot | −6.3 | [−9.5, −2.9] | [−9.6, −2.5] |
+
+SFT beats the base model with a by-question CI that excludes 0. With 11 databases the by-database CI does not, so the
+honest claim is "better on these databases", not "better on a new one". Vote-8 is the cleaner gain: significant at
+both levels, it lifts the executed rate to 98.5% and costs 8× the generation.
+
+![EX by hardness, base vs SFT](../assets/ex_by_hardness_sft.png)
+
+| Hardness | n | Base | SFT | SFT vote-8 | Haiku 3-shot |
+|---|---:|---:|---:|---:|---:|
+| easy | 150 | 86.0 | 82.0 | 83.3 | 90.7 |
+| medium | 223 | 70.4 | 73.5 | 80.7 | 85.2 |
+| hard | 144 | 66.0 | 75.7 | 79.2 | 86.8 |
+| extra | 103 | 47.6 | 61.2 | 67.0 | 73.8 |
+
+SFT halves the unknown-column errors (88 → 44) and gains most on hard (+9.7) and extra (+13.6) questions. It loses 4
+points on easy ones: 14 easy questions flip to wrong and 8 to right, and 13 of the 14 losses still run. They are a
+template prior, not errors: `count(*)` where base had `SUM(…)` or `count(DISTINCT …)`, `GROUP BY … HAVING count(*) > N`
+where a column held the answer, and `"Patent"` copied from the question where base had read `'Research Patent'` from
+the example rows.
+
+**Error analysis** (`eval/results/val/sft_error_analysis.json`): 30 of the 161 SFT failures, drawn with seed 7, read by
+hand against both result sets and the schema:
+
+| Category | Count |
+|---|---:|
+| wrong join path | 11 |
+| wrong table / column | 7 |
+| question ambiguous | 4 |
+| aggregation / grouping | 3 |
+| wrong value or literal | 2 |
+| gold arguably wrong | 2 |
+| ordering / limit | 0 |
+| other (duplicate rows) | 1 |
+
+- *Missing join* (`game_1`): "total hours per week and games played for students under 20" →
+  `SELECT sum(hoursperweek), sum(gamesplayed) FROM Sportsinfo WHERE age < 20`. `age` lives in `Student`, which is never
+  joined.
+- *Wrong alias* (`insurance_fnol`): `… EXCEPT SELECT T2.customer_name FROM customers AS T1 JOIN first_notification_of_loss
+  AS T2 …`. The column is on `T1`.
+- *Aggregation* (`flight_4`): "How many cities have more than 3 airports?" → `SELECT count(*) FROM airports GROUP BY city
+  HAVING count(*) > 3`, which returns 46 per-city counts instead of counting the 46 cities.
+
+**What this says for GRPO.** Schema linking is 18 of the 30. Nine of the 11 join errors are a missing join: the query
+names a column of a table it never joined, and in eight of them it fails with "no such column", earning no execution
+reward at all. That is exactly the signal GRPO's reward gives for free. Aggregation and value errors (5) run but return
+the wrong rows, so only the correct-result reward separates them. About 6 of the 30 (20%) are problems with the data
+rather than the model: two questions are truncated in Spider itself, two are vague or contradictory, one gold uses OR
+where the question says AND, and one gold selects an extra column. That bounds what any model can gain on these
+databases.
+
+**Compute.** One Kaggle T4 session of 5.4 h (training 4.4 h, val greedy 9 min, vote-8 43 min). Two earlier starts died
+within 3 minutes, and Kaggle reported both as complete:
+1. Kaggle's image ships torchao 0.10, which PEFT rejects when it builds LoRA layers, so the kernel uninstalls it.
+2. Kaggle keeps its preinstalled transformers 5.16.1, whose `logits_to_keep` takes only an int or a 1D index, so the
+   loss passes a 1D index.
+
+CI now runs the tests against Kaggle's transformers, the oldest allowed and the latest. Each kernel writes a
+per-command `status.json`, so a crash can no longer pass as "complete".
 
 ## 4. Reinforcement learning with an execution reward (M3)
 The GRPO objective as implemented, step timing on a T4, the run, monitors (zero-variance groups, KL, length,

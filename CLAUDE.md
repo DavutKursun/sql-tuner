@@ -8,12 +8,21 @@ line. Section 0 says where we are.
 
 ## 0. Status (updated 2026-10-29)
 
-**M1 done, start at M2.** Base model: **Qwen/Qwen2.5-Coder-1.5B-Instruct** (val EX 69.4% zero-shot; Claude Haiku 5.5
-3-shot 85.0%, Sonnet 5.5 3-shot 94.0% on 300) — `eval/results/base_choice.json`, DESIGN.md §1–2. Prompt keeps 3
-example rows per table (+6.8 points on the 1.5B). Hardness port agrees 99.05 / 99.19 / 97.78% with the official script
-(train / val / dev). Open for M2: SFT `max_len` 2,048 would drop 11% of train (large schemas) — decide on val.
-Harness changes in M1: `db_empty`, `ex_nonempty_gold`, 200k row cap, plain greedy / sampling (no generation_config
-leak), Claude 5.5 API (no temperature, thinking off), error classes. 43 tests.
+**M2 done, start at M3.** SFT adapter (private Hub repo `DavutKursun/sql-tuner-sft`; LoRA r 16, `max_len` 4,096 keeps
+98.98% of train, 2 epochs, the lowest-val-loss checkpoint = step 200 of 996): val EX **74.0%** greedy, **78.7%** vote-8,
+against base zero-shot 69.4% and Claude Haiku 5.5 3-shot 85.0%. Paired SFT − base +4.7 (CI by question [+1.1, +8.7];
+by database [−2.1, +12.0], includes 0); vote-8 − SFT +4.7 (both CIs exclude 0). Of 30 SFT failures 18 are schema
+linking (11 join path, mostly a missing join that fails with "no such column"), 3 aggregation, 2 values, 6 data
+problems — DESIGN.md §3. Open for M3: SFT checkpoints were chosen by val loss, which rose after step 200; choose by val
+EX. HF Jobs launcher (`scripts/run_hf_job.py`) is ready but the HF token lacks `job.write`: its smoke test waits for
+Davut. Kaggle (Oct 2026): Python 3.13, torch 2.11.0+cu128, transformers 5.16.1, peft 0.20.0 (pip keeps them; CI tests
+5.16.1, 4.57.1 and latest); the kernel uninstalls torchao 0.10 (PEFT rejects it). 49 tests.
+
+M1 (done): base model **Qwen/Qwen2.5-Coder-1.5B-Instruct** (val EX 69.4% zero-shot; Claude Haiku 5.5 3-shot 85.0%,
+Sonnet 5.5 3-shot 94.0% on 300) — `eval/results/base_choice.json`, DESIGN.md §1–2. Prompt keeps 3 example rows per
+table (+6.8 points on the 1.5B). Hardness port agrees 99.05 / 99.19 / 97.78% with the official script (train / val /
+dev). Harness changes in M1: `db_empty`, `ex_nonempty_gold`, 200k row cap, plain greedy / sampling (no
+generation_config leak), Claude 5.5 API (no temperature, thinking off), error classes.
 
 The starter (before M1) was implemented and tested with 34 tests, offline (a miniature Spider and a tiny random model
 built in code):

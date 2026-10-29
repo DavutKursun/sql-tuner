@@ -1,0 +1,51 @@
+{
+ "model": "Qwen2.5-Coder-1.5B-Instruct + SFT adapter (step 200), greedy",
+ "sample": "30 of the 161 val failures, numpy default_rng(7).choice without replacement, read by hand with both result sets and the schema",
+ "counts": {
+  "wrong join path": 11,
+  "wrong table/column": 7,
+  "question ambiguous": 4,
+  "aggregation/grouping": 3,
+  "wrong value or literal": 2,
+  "gold arguably wrong": 2,
+  "ordering/limit": 0,
+  "other": 1
+ },
+ "notes": {
+  "wrong join path": "9 of 11 are a MISSING join: a column is used from a table that is not in FROM (age, OnScholarship, fname, outcome_description, master_customer_id, Fleet_Series ...), so the query fails with 'no such column'; 2 add joins that multiply or empty the rows",
+  "question ambiguous": "2 of 4 questions are truncated in Spider itself ('... which are involved in', 'What are the advisors')",
+  "gold arguably wrong": "OR where the question means AND; an extra id column in the gold SELECT. Item 9's gold literal also matches no database value (its filter excludes nothing), though the prediction failed on the table first"
+ },
+ "items": [
+  {"id": "train_spider-56", "category": "wrong table/column", "note": "course_id selected where the name is asked"},
+  {"id": "train_spider-71", "category": "wrong join path", "note": "extra joins through registrations multiply the attendance rows (4 vs 1)"},
+  {"id": "train_spider-92", "category": "wrong join path", "note": "missing join to People_Addresses: all 15 address cities instead of the 8 where people live"},
+  {"id": "train_spider-103", "category": "question ambiguous", "note": "'all info of students': gold returns registration rows (SELECT *), prediction returns student_details"},
+  {"id": "train_spider-920", "category": "wrong table/column", "note": "T2.customer_name: alias points at first_notification_of_loss, not customers"},
+  {"id": "train_spider-2093", "category": "wrong join path", "note": "Fleet_Series needs the aircraft table, never joined"},
+  {"id": "train_spider-2647", "category": "wrong join path", "note": "source_system_code taken from Council_Tax; it lives in CMI_Cross_References (missing join)"},
+  {"id": "train_spider-2648", "category": "wrong join path", "note": "master_customer_id taken from Business_Rates (missing join)"},
+  {"id": "train_spider-2651", "category": "wrong table/column", "note": "Council_Tax instead of Rent_Arrears; the gold literal also misses the database value"},
+  {"id": "train_spider-3011", "category": "aggregation/grouping", "note": "count(*) of banks instead of sum(no_of_customers)"},
+  {"id": "train_spider-4328", "category": "question ambiguous", "note": "question truncated in Spider ('... which are involved in'); gold filters sum(grant_amount) > 6000"},
+  {"id": "train_spider-4337", "category": "gold arguably wrong", "note": "gold uses OR for 'described as Regular that was granted more than 100'"},
+  {"id": "train_spider-4363", "category": "question ambiguous", "note": "'for each staff id ... the most' with LIMIT 1 in gold; contradictory question"},
+  {"id": "train_spider-4367", "category": "wrong join path", "note": "document_description used on Grants; needs Documents and Document_Types"},
+  {"id": "train_spider-4374", "category": "wrong value or literal", "note": "description 'Patent' instead of the code 'Patent' / description 'Research Patent' shown in the example rows"},
+  {"id": "train_spider-4380", "category": "wrong table/column", "note": "outcome_details of Project_Outcomes instead of outcome_description of Research_Outcomes"},
+  {"id": "train_spider-4394", "category": "wrong join path", "note": "outcome_description taken from Project_Outcomes (missing join)"},
+  {"id": "train_spider-5998", "category": "question ambiguous", "note": "question truncated in Spider ('What are the advisors'); gold keeps advisors with >= 2 students"},
+  {"id": "train_spider-6008", "category": "wrong table/column", "note": "hoursplayed (no such column) instead of gamesplayed"},
+  {"id": "train_spider-6014", "category": "aggregation/grouping", "note": "one count over a join with Plays_Games instead of count(*) and sum(gamesplayed) per student"},
+  {"id": "train_spider-6024", "category": "wrong join path", "note": "OnScholarship used on Student; it is in SportsInfo (missing join / INTERSECT)"},
+  {"id": "train_spider-6030", "category": "wrong join path", "note": "fname used on SportsInfo; Student never joined"},
+  {"id": "train_spider-6031", "category": "wrong join path", "note": "age used on SportsInfo; Student never joined"},
+  {"id": "train_spider-6038", "category": "other", "note": "join instead of INTERSECT: right ids, duplicated rows (missing DISTINCT)"},
+  {"id": "train_spider-6408", "category": "wrong join path", "note": "unneeded joins to Statements and Documents_with_Expenses empty the result"},
+  {"id": "train_spider-6833", "category": "gold arguably wrong", "note": "gold adds dst_apid to the asked name and city"},
+  {"id": "train_spider-6853", "category": "aggregation/grouping", "note": "GROUP BY city HAVING without the outer count: 46 per-city counts instead of 46"},
+  {"id": "train_spider-6868", "category": "wrong table/column", "note": "T1.country with T1 = routes; country is in airlines"},
+  {"id": "train_spider-6881", "category": "wrong table/column", "note": "dst_ap compared with an airport id, filter on destination instead of source"},
+  {"id": "train_spider-6882", "category": "wrong value or literal", "note": "src_ap = 'CHN' instead of airports.country = 'China'"}
+ ]
+}
