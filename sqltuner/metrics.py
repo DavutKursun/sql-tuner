@@ -83,19 +83,43 @@ def majority_vote(results: list[ExecResult]) -> int:
 
 
 # --- the RL reward ----------------------------------------------------------------------------------------------------
+FAILURE_KINDS = ("no_sql", "guard", "timeout", "syntax", "no_such_column", "no_such_table", "other")
+
+
+def failure_kind(error: str | None) -> str | None:
+    """Why a prediction did not execute, in the classes GRPO's monitors count (None when it ran)."""
+    if not error:
+        return None
+    low = error.lower()
+    if low == "no sql":
+        return "no_sql"
+    if low.startswith("guard"):
+        return "guard"
+    if low == "timeout":
+        return "timeout"
+    if "syntax error" in low or "incomplete input" in low or "unrecognized token" in low:
+        return "syntax"
+    if "no such column" in low:
+        return "no_such_column"
+    if "no such table" in low:
+        return "no_such_table"
+    return "other"
+
+
 @dataclass
 class Reward:
     value: float
     correct: bool
     executed: bool
     flags: tuple[str, ...]  # reward-hacking monitors, never part of the value
+    failure: str | None = None  # failure_kind of the prediction
 
 
 def reward(pred_sql: str, pred: ExecResult, gold: ExecResult, gold_sql: str, exec_bonus: float = GRPO.exec_bonus) -> Reward:
     """1 for the right result; `exec_bonus` for SQL that runs but is wrong; 0 for no SQL, a refused or failing query.
     Flags record behaviour worth watching during training (they are logged, not rewarded or punished)."""
     if not pred_sql:
-        return Reward(0.0, False, False, ("no_sql",))
+        return Reward(0.0, False, False, ("no_sql",), "no_sql")
     g = grade(pred, gold, gold_sql)
     flags = []
     if g.executed and g.empty and gold.ok and not gold.empty:
@@ -105,6 +129,8 @@ def reward(pred_sql: str, pred: ExecResult, gold: ExecResult, gold_sql: str, exe
         flags.append("added_limit")
     if "select *" in low and "select *" not in gold_sql.lower():
         flags.append("select_star")
+    if g.executed and pred.truncated:
+        flags.append("row_cap")  # more rows than ExecRules.max_rows: compared on the first max_rows only
     if g.executed and gold.ok and len(gold.rows) and g.pred_rows > 10 * len(gold.rows):
         flags.append("row_flood")
     if pred.error and pred.error.startswith("guard"):
@@ -112,4 +138,4 @@ def reward(pred_sql: str, pred: ExecResult, gold: ExecResult, gold_sql: str, exe
     if pred.error == "timeout":
         flags.append("timeout")
     value = 1.0 if g.correct else (exec_bonus if g.executed else 0.0)
-    return Reward(value, g.correct, g.executed, tuple(flags))
+    return Reward(value, g.correct, g.executed, tuple(flags), failure_kind(pred.error))

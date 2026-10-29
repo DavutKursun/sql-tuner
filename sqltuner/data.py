@@ -140,6 +140,22 @@ def save_splits(splits: dict[str, list[Example]], out_dir: Path = SPLITS) -> dic
     return summary
 
 
+def stratified_subset(examples: list[Example], n: int, seed: int = SEED) -> list[Example]:
+    """n examples, each database contributing in proportion to its size (largest remainder), drawn with `seed`; returned
+    in their original order. GRPO tracks greedy EX on such a fixed val subset during training."""
+    by_db: dict[str, list[int]] = {}
+    for i, e in enumerate(examples):
+        by_db.setdefault(e.db_id, []).append(i)
+    n = min(n, len(examples))
+    quota = {db: n * len(ix) / len(examples) for db, ix in by_db.items()}
+    take = {db: int(q) for db, q in quota.items()}
+    for db in sorted(quota, key=lambda d: (take[d] - quota[d], d))[: n - sum(take.values())]:
+        take[db] += 1
+    rng = np.random.default_rng(seed)
+    chosen = [int(i) for db in sorted(by_db) for i in rng.choice(by_db[db], size=take[db], replace=False)]
+    return [examples[i] for i in sorted(chosen)]
+
+
 def load_split(name: str, splits_dir: Path = SPLITS) -> list[Example]:
     path = splits_dir / f"{name}.jsonl"
     if not path.exists():

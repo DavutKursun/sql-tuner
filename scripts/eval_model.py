@@ -24,7 +24,7 @@ sys.path.insert(0, str(ROOT))
 
 from sqltuner.config import GEN, PROMPT, RAW, RESULTS, SEED, SPLITS
 from sqltuner.data import CLOSED_SPLITS, find_spider, load_split
-from sqltuner.generate import GoldBackend, make_backend
+from sqltuner.generate import GoldBackend, find_adapter, make_backend
 from sqltuner.runner import evaluate, few_shot_pool, summarize, write_predictions
 
 
@@ -50,6 +50,7 @@ def main(argv=None, backend_override=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--backend", required=True, help="hf:<id or path> | anthropic:<model> | llamacpp:<gguf> | gold")
     ap.add_argument("--adapter", default=None)
+    ap.add_argument("--merge-adapter", default=None, help="adapter folded into the base first (a GRPO checkpoint sits on the merged SFT model)")
     ap.add_argument("--split", default="val", choices=["train", "val", "dev", "test"])
     ap.add_argument("--final", action="store_true", help="required for dev and test (read once, Milestone 4)")
     ap.add_argument("--limit", type=int, default=0, help="random subset of this many questions (seeded); 0 = all")
@@ -90,13 +91,13 @@ def main(argv=None, backend_override=None) -> int:
     elif a.backend == "gold":
         backend = GoldBackend([e.query for e in examples])
     else:
-        backend = make_backend(a.backend, a.adapter, a.device, a.max_usd, a.batch_size)
+        backend = make_backend(a.backend, find_adapter(a.adapter), a.device, a.max_usd, a.batch_size, merge=find_adapter(a.merge_adapter))
     t = time.time()
     preds, usage = evaluate(examples, backend, sd, rules, shots, a.samples, max_new_tokens=a.max_new_tokens)
     tag = tag_for(a)
     out_dir = a.out / a.split
     write_predictions(preds, out_dir / f"{tag}.jsonl")
-    summary = summarize(preds, usage, {"backend": a.backend, "adapter": a.adapter, "split": a.split, "tag": tag, "few_shot": a.few_shot, "samples": a.samples,
+    summary = summarize(preds, usage, {"backend": a.backend, "adapter": a.adapter, "merge_adapter": a.merge_adapter, "split": a.split, "tag": tag, "few_shot": a.few_shot, "samples": a.samples,
                                        "sample_rows": a.sample_rows, "limit": a.limit, "run_date": str(date.today()), "minutes": round((time.time() - t) / 60, 2),
                                        "thinking": getattr(backend, "thinking", None), "stopped_early": len(preds) < len(examples),
                                        "device": getattr(backend, "device", None), "batch_size": a.batch_size if a.backend.startswith("hf:") else None})

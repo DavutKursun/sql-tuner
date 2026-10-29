@@ -65,6 +65,21 @@ def pick_device(name: str | None = None) -> str:
     return "cpu"
 
 
+def find_adapter(spec: str | None) -> str | None:
+    """An adapter folder, or the first folder holding adapter_config.json that matches a glob. A Kaggle kernel's output
+    is mounted under /kaggle/input with a layout that varies, so '/kaggle/input/**/models/sft' finds it. Anything without
+    a '*' (a path or a Hub repo id) passes through unchanged."""
+    if not spec or "*" not in spec:
+        return spec
+    import glob
+    from pathlib import Path
+
+    hits = sorted(p for p in glob.glob(spec, recursive=True) if Path(p, "adapter_config.json").exists())
+    if not hits:
+        raise FileNotFoundError(f"no adapter folder matches {spec}")
+    return hits[0]
+
+
 def cuda_dtype():
     """bf16 on GPUs that have it natively (A100, L4, H100: compute capability 8+), else fp16 (T4). torch's own
     `is_bf16_supported()` also counts emulated bf16 by default, which says True on a T4 and would be very slow there."""
@@ -82,9 +97,11 @@ def amp_dtype(device: str):
     return cuda_dtype() if device == "cuda" else None
 
 
-def load_model(model_id: str, adapter: str | None = None, device: str | None = None, dtype: str = "auto", trainable: bool = False):
-    """Tokenizer + causal LM (+ LoRA adapter). On CUDA bf16 where native, else fp16 (`cuda_dtype`); fp16 for inference
-    on MPS; fp32 on CPU and for training off CUDA."""
+def load_model(model_id: str, adapter: str | None = None, device: str | None = None, dtype: str = "auto", trainable: bool = False,
+               merge: str | None = None):
+    """Tokenizer + causal LM (+ LoRA adapter). `merge`: an adapter folded into the weights first — GRPO trains a new
+    adapter on top of the merged SFT model, so a GRPO checkpoint loads as merge=<SFT>, adapter=<GRPO>. On CUDA bf16
+    where native, else fp16 (`cuda_dtype`); fp16 for inference on MPS; fp32 on CPU and for training off CUDA."""
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -98,6 +115,10 @@ def load_model(model_id: str, adapter: str | None = None, device: str | None = N
         tok.pad_token = tok.eos_token
     tok.padding_side = "left"  # generation pads on the left
     model = AutoModelForCausalLM.from_pretrained(model_id, dtype=torch_dtype)
+    if merge:
+        from peft import PeftModel
+
+        model = PeftModel.from_pretrained(model, merge).merge_and_unload()
     if adapter:
         from peft import PeftModel
 
@@ -120,9 +141,10 @@ def sampling_kwargs(temperature: float) -> dict:
 class HFBackend(Backend):
     name = "hf"
 
-    def __init__(self, model_id: str, adapter: str | None = None, device: str | None = None, batch_size: int = 8, tok=None, model=None) -> None:
+    def __init__(self, model_id: str, adapter: str | None = None, device: str | None = None, batch_size: int = 8, tok=None, model=None,
+                 merge: str | None = None) -> None:
         if model is None:
-            tok, model, device = load_model(model_id, adapter, device)
+            tok, model, device = load_model(model_id, adapter, device, merge=merge)
         self.tok, self.model, self.device = tok, model, device or pick_device()
         self.batch_size = batch_size
         self.model_id, self.adapter = model_id, adapter
@@ -246,11 +268,12 @@ class LlamaCppBackend(Backend):
         return out
 
 
-def make_backend(spec: str, adapter: str | None = None, device: str | None = None, max_usd: float = 5.0, batch_size: int = 8) -> Backend:
-    """spec: 'hf:<model id or path>' | 'anthropic:<model id>' | 'llamacpp:<path.gguf>'."""
+def make_backend(spec: str, adapter: str | None = None, device: str | None = None, max_usd: float = 5.0, batch_size: int = 8,
+                 merge: str | None = None) -> Backend:
+    """spec: 'hf:<model id or path>' | 'anthropic:<model id>' | 'llamacpp:<path.gguf>'. `merge`: adapter folded in first."""
     kind, _, ident = spec.partition(":")
     if kind == "hf":
-        return HFBackend(ident, adapter, device, batch_size)
+        return HFBackend(ident, adapter, device, batch_size, merge=merge)
     if kind == "anthropic":
         return AnthropicBackend(ident, max_usd)
     if kind == "llamacpp":

@@ -17,6 +17,8 @@ import build_splits
 import compare
 import download
 import eval_model
+import grpo_inputs
+import grpo_probe
 import make_kaggle_notebook
 import run_hf_job
 import train_grpo
@@ -76,7 +78,9 @@ def test_chain(ws):
                             "--prompts-per-step", "2", "--group-size", "2", "--max-new-tokens", "8", "--eval-every", "1", "--eval-questions", "4",
                             "--micro-batch", "2", "--results", str(ws["out"]), *common(ws)]) == 0
     log = json.loads((grpo_dir / "grpo_log.json").read_text())
-    assert log["steps"] == 2 and len(log["history"]) == 2 and "val_ex_before" in log and (grpo_dir / "adapter_config.json").exists()
+    assert log["steps"] == 2 and len(log["history"]) == 2 and [e["step"] for e in log["evals"]] == [0, 1, 2] and (grpo_dir / "adapter_config.json").exists()
+    assert all((grpo_dir / f"step_{k:03d}" / "adapter_config.json").exists() for k in (0, 1, 2)) and (grpo_dir / "prompt_order.json").exists()
+    assert (ws["out"] / "val_subset" / "grpo" / "step_002.jsonl").exists() and len(log["val_subset"]) == 4 and log["lora_dropout"] == 0.0
     assert log["skipped"]["db_empty"] == 14 and log["pool"] + sum(log["skipped"].values()) == len(train)  # empty databases stay out of RL
 
     assert eval_model.main(["--backend", "gold", "--split", "val", "--tag", "gold2", *common(ws), *out]) == 0
@@ -110,9 +114,36 @@ def test_grpo_skip_reasons():
     assert train_grpo.skip_reason(ex(db_empty=True), replace(GRPO, skip_db_empty=False)) is None
 
 
+def test_grpo_probe_and_inputs(ws, tmp_path):
+    from grpo_probe import decide
+
+    rows = [{"hardness": "easy", "correct": k} for k in (8, 8, 8, 0, 5)] + [{"hardness": "hard", "correct": k} for k in (0, 0, 3, 2, 6)]
+    d = decide(rows, 8)  # 6 of 10 groups all-right or all-wrong; mixed: 1 easy, 3 hard
+    assert d["zero_variance_share"] == 0.6 and d["decision"] == "by hardness" and d["hardness_weights"] == {"easy": 0.25, "hard": 0.75}
+    assert decide(rows[:1] + rows[4:5] + rows[7:9], 8)["decision"] == "uniform"  # 1 of 4 zero-variance
+    out = tmp_path / "probe.json"
+    assert grpo_probe.main(["--base", str(ws["tiny"]), "--prompts", "3", "--samples", "2", "--max-new-tokens", "8", "--device", "cpu", "--out", str(out), *common(ws)]) == 0
+    p = json.loads(out.read_text())
+    assert p["prompts"] == 3 and p["max_new_tokens"] % 32 == 0 and p["max_new_tokens"] <= 256 and {"p50", "p95", "p99"} <= set(p["lengths"])
+    assert grpo_inputs.main(["--base", str(ws["tiny"]), "--subset", "6", "--out", str(tmp_path), *common(ws)]) == 0
+    ids = json.loads((tmp_path / "val_subset_ids.json").read_text())
+    pool = json.loads((tmp_path / "grpo_pool.json").read_text())
+    assert ids["n"] == len(ids["ids"]) == 6 and pool["pool"] + sum(pool["dropped"].values()) == pool["train"] and pool["dropped"]["db_empty"] == 14
+
+
+def test_pool_weights():
+    from sqltuner.data import Example
+
+    pool = [Example(str(i), "train", "d", "q", "SELECT 1", hardness=h) for i, h in enumerate(["easy"] * 6 + ["hard"] * 2)]
+    p = train_grpo.pool_weights(pool, {"easy": 0.25, "hard": 0.75})
+    assert abs(p.sum() - 1) < 1e-9 and abs(p[:6].sum() - 0.25) < 1e-9 and abs(p[6:].sum() - 0.75) < 1e-9 and train_grpo.pool_weights(pool, None) is None
+
+
 def test_kaggle_notebook(tmp_path):
     cmds = ["python scripts/train_sft.py --base X", "python scripts/eval_model.py --backend hf:X --adapter models/sft", "python scripts/eval_model.py --samples 8"]
-    assert make_kaggle_notebook.main(["--name", "sft", "--user", "someone", *[x for c in cmds for x in ("--cmd", c)], "--out", str(tmp_path)]) == 0
+    assert make_kaggle_notebook.main(["--name", "sft", "--user", "someone", *[x for c in cmds for x in ("--cmd", c)], "--kernel-source", "someone/sql-tuner-sft",
+                                      "--out", str(tmp_path)]) == 0
+    assert json.loads((tmp_path / "sft" / "kernel-metadata.json").read_text())["kernel_sources"] == ["someone/sql-tuner-sft"]
     nb = json.loads((tmp_path / "sft" / "sql-tuner-sft.ipynb").read_text())
     meta = json.loads((tmp_path / "sft" / "kernel-metadata.json").read_text())
     src = "".join(c["source"] for c in nb["cells"])

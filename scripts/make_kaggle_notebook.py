@@ -34,6 +34,7 @@ def main(argv=None) -> int:
     ap.add_argument("--cmd", required=True, action="append", help="a command run from the repo root; repeat for several")
     ap.add_argument("--user", default="USERNAME", help="Kaggle username (only the name; never the key)")
     ap.add_argument("--branch", default="main")
+    ap.add_argument("--kernel-source", action="append", default=[], help="<user>/<kernel>: its output is mounted under /kaggle/input")
     ap.add_argument("--out", type=Path, default=ROOT / "kaggle")
     a = ap.parse_args(argv)
     run = "\n".join(f'!{c} && echo "{i} ok" >> {STATUS} || echo "{i} FAILED" >> {STATUS}' for i, c in enumerate(a.cmd, 1))
@@ -59,7 +60,7 @@ def main(argv=None) -> int:
     (folder / f"sql-tuner-{a.name}.ipynb").write_text(json.dumps(nb, indent=1), encoding="utf-8")
     meta = {"id": f"{a.user}/sql-tuner-{a.name}", "title": f"sql-tuner-{a.name}", "code_file": f"sql-tuner-{a.name}.ipynb", "language": "python",
             "kernel_type": "notebook", "is_private": True, "enable_gpu": True, "enable_internet": True, "dataset_sources": [], "competition_sources": [],
-            "kernel_sources": [], "model_sources": []}
+            "kernel_sources": a.kernel_source, "model_sources": []}
     (folder / "kernel-metadata.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
     print(folder)
     return 0

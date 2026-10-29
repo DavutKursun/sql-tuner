@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import replace
 from types import SimpleNamespace
 
@@ -235,6 +236,102 @@ def test_sft_eta_switches_to_one_epoch(spider, tiny, tmp_path):
                      gradient_checkpointing=False, log=None, max_hours=1e-9, eta_after=1, log_every=1)
     assert info["eta"]["switched_to_one_epoch"] and info["epochs_run"] == 1 and info["steps"] == 3  # 12 examples / 4 per step
     assert [r["step"] for r in info["train_log"]] == [1, 2, 3] and info["log"][0]["step"] == 0 and info["precision"] == "fp32"
+
+
+def test_merge_then_adapter(tiny, tmp_path):
+    import torch
+
+    from sqltuner.generate import find_adapter
+    from sqltuner.sft import add_lora
+
+    tok, model, _ = load_model(str(tiny), device="cpu", trainable=True)
+    m = add_lora(model, replace(LORA, r=4, alpha=8))
+    for p in m.parameters():
+        if p.requires_grad:
+            torch.nn.init.normal_(p, std=0.3)  # a non-zero adapter, so merging changes the weights
+    m.save_pretrained(tmp_path / "out" / "models" / "sft")
+    found = find_adapter(str(tmp_path / "**" / "models" / "sft"))  # how a kernel finds another kernel's output
+    assert found == str(tmp_path / "out" / "models" / "sft") and find_adapter("DavutKursun/x") == "DavutKursun/x" and find_adapter(None) is None
+    ids = tok("SELECT name FROM t", return_tensors="pt")["input_ids"]
+    with torch.no_grad():
+        merged, wrapped, plain = (load_model(str(tiny), device="cpu", **kw)[1](ids).logits for kw in ({"merge": found}, {"adapter": found}, {}))
+    assert torch.allclose(merged, wrapped, atol=1e-4) and not torch.allclose(merged, plain, atol=1e-3)
+
+
+def test_failure_kinds_and_row_cap_flag():
+    from sqltuner.metrics import failure_kind
+
+    errors = (None, "no sql", "guard: not a query", "timeout", 'sqlite: near "x": syntax error', "sqlite: no such column: a", "sqlite: no such table: t",
+              "sqlite: misuse of aggregate: count()")
+    assert [failure_kind(e) for e in errors] == [None, "no_sql", "guard", "timeout", "syntax", "no_such_column", "no_such_table", "other"]
+    gold = ExecResult(True, [(1,)], ["c"])
+    r = reward("SELECT c FROM t", ExecResult(True, [(1,)] * 5, ["c"], truncated=True), gold, "SELECT c FROM t")
+    assert "row_cap" in r.flags and r.failure is None and r.value == 0.1
+    r = reward("SELECT x FROM t", ExecResult(False, error="sqlite: no such column: x"), gold, "SELECT c FROM t")
+    assert r.failure == "no_such_column" and r.value == 0.0
+
+
+def test_val_subset_and_prompt_order(spider):
+    from collections import Counter
+
+    from sqltuner.data import stratified_subset
+    from sqltuner.grpo import prompt_order
+
+    train = load_split("train", spider["splits_dir"])
+    sub = stratified_subset(train, 20, seed=7)
+    assert len(sub) == 20 and [e.id for e in sub] == [e.id for e in stratified_subset(train, 20, seed=7)]
+    assert [e.id for e in sub] == [e.id for e in train if e.id in {s.id for s in sub}]  # original order kept
+    full, got = Counter(e.db_id for e in train), Counter(e.db_id for e in sub)
+    assert all(abs(got[db] - 20 * n / len(train)) < 1 for db, n in full.items())  # proportional to each database's size
+    a = prompt_order(10, 5, 3, seed=1)
+    assert a == prompt_order(10, 5, 3, seed=1) and all(len(set(s)) == 3 for s in a)  # fixed by the seed; no repeats within a step
+    p = np.array([0.0] * 5 + [0.2] * 5)
+    assert all(i >= 5 for s in prompt_order(10, 20, 2, p, seed=2) for i in s)  # zero weight: never drawn
+
+
+def _tiny_policy(tiny):
+    from sqltuner.sft import add_lora
+
+    tok, model, _ = load_model(str(tiny), device="cpu", trainable=True)
+    return tok, add_lora(model, replace(LORA, r=4, alpha=8, dropout=0.0))
+
+
+def test_grpo_step_truncation_and_monitors(tiny):
+    import torch
+
+    from sqltuner.grpo import grpo_step
+
+    tok, model = _tiny_policy(tiny)
+    prompts = [apply_chat_template(tok, [{"role": "user", "content": f"Question {k}"}]) for k in ("one", "two")]
+    opt = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad], lr=1e-3)
+    always_right = lambda i, t: (1.0, {"correct": True, "executed": True, "flags": ("select_star",), "failure": None, "sql": "SELECT *"})
+    torch.manual_seed(0)
+    st = grpo_step(model, tok, prompts, always_right, opt, replace(GRPO, group_size=4, max_new_tokens=2, micro_batch=4, beta=0.0), "cpu")
+    assert {"executed_wrong", "failures", "completion_tokens_p95", "truncated", "reward_s", "ref_s", "train_s", "peak_gib", "samples"} <= set(st)
+    # a 2-token cap: the random tiny model rarely ends its turn, and an unfinished completion earns 0 even when "right"
+    assert st["truncated"] > 0.5 and all(s["reward"] == (0.0 if "truncated" in s["flags"] else 1.0) for s in st["samples"])
+    assert abs(st["reward"] - (1 - st["truncated"])) < 1e-9 and abs(st["correct"] - (1 - st["truncated"])) < 1e-9
+
+
+def test_train_grpo_checkpoints_evals_and_guard(tiny, tmp_path):
+    import torch
+
+    from sqltuner.grpo import train_grpo
+
+    tok, model = _tiny_policy(tiny)
+    prompts = [apply_chat_template(tok, [{"role": "user", "content": f"Question {k}"}]) for k in ("one", "two")]
+    reward_fn = lambda i, t: (float(len(t) % 2), {"correct": len(t) % 2 == 1, "executed": True, "flags": (), "failure": None, "sql": t})
+    rules = replace(GRPO, group_size=2, prompts_per_step=1, max_new_tokens=3, eval_every=2, micro_batch=2, beta=0.0)
+    seen: list[int] = []
+    torch.manual_seed(0)
+    info = train_grpo(model, tok, prompts, reward_fn, tmp_path / "g", "cpu", rules, eval_fn=lambda s: seen.append(s) or 0.5, log=None, steps=4, prompt_ids=["a", "b"])
+    assert seen == [0, 2, 4] and info["best_step"] == 0  # equal scores: the earlier checkpoint wins
+    assert all((tmp_path / "g" / f"step_{k:03d}" / "adapter_config.json").exists() for k in (0, 2, 4)) and (tmp_path / "g" / "adapter_config.json").exists()
+    order = json.loads((tmp_path / "g" / "prompt_order.json").read_text())
+    assert order["hash"] == info["order_hash"] and len(order["steps"]) == 4 and all(i in ("a", "b") for s in order["ids"] for i in s)
+    # wall-clock guard: no time for another step, so it stops cleanly with the last state saved and evaluated
+    info = train_grpo(model, tok, prompts, reward_fn, tmp_path / "h", "cpu", rules, eval_fn=lambda s: 0.5, log=None, steps=50, max_hours=1e-6)
+    assert info["stopped"] and info["steps"] == 1 and [e["step"] for e in info["evals"]] == [0, 1] and (tmp_path / "h" / "step_001").exists()
 
 
 # --- GRPO -------------------------------------------------------------------------------------------------------------

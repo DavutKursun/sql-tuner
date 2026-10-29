@@ -1,0 +1,48 @@
+{
+ "tokenizer": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+ "max_prompt_tokens": 2048,
+ "train": 8039,
+ "pool": 5301,
+ "dropped": {
+  "gold_failed": 3,
+  "db_empty": 1759,
+  "gold_empty": 161,
+  "too_long": 815
+ },
+ "train_hardness": {
+  "easy": {
+   "n": 1833,
+   "share": 0.228
+  },
+  "medium": {
+   "n": 2765,
+   "share": 0.3439
+  },
+  "hard": {
+   "n": 1845,
+   "share": 0.2295
+  },
+  "extra": {
+   "n": 1596,
+   "share": 0.1985
+  }
+ },
+ "pool_hardness": {
+  "easy": {
+   "n": 1355,
+   "share": 0.2556
+  },
+  "medium": {
+   "n": 2141,
+   "share": 0.4039
+  },
+  "hard": {
+   "n": 1120,
+   "share": 0.2113
+  },
+  "extra": {
+   "n": 685,
+   "share": 0.1292
+  }
+ }
+}
