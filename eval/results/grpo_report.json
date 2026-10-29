@@ -1,0 +1,472 @@
+{
+ "steps": 300,
+ "stopped": null,
+ "minutes": 366.6,
+ "evals": [
+  {
+   "step": 0,
+   "val_ex": 0.705,
+   "minutes": 2.9,
+   "eval_s": 175.7
+  },
+  {
+   "step": 50,
+   "val_ex": 0.7,
+   "minutes": 65.4,
+   "eval_s": 184.6
+  },
+  {
+   "step": 100,
+   "val_ex": 0.705,
+   "minutes": 125.5,
+   "eval_s": 182.9
+  },
+  {
+   "step": 150,
+   "val_ex": 0.715,
+   "minutes": 184.6,
+   "eval_s": 182.7
+  },
+  {
+   "step": 200,
+   "val_ex": 0.725,
+   "minutes": 247.5,
+   "eval_s": 174.9
+  },
+  {
+   "step": 250,
+   "val_ex": 0.74,
+   "minutes": 307.0,
+   "eval_s": 186.4
+  },
+  {
+   "step": 300,
+   "val_ex": 0.75,
+   "minutes": 366.6,
+   "eval_s": 177.9
+  }
+ ],
+ "chosen": {
+  "step": 300,
+  "val_ex": 0.75
+ },
+ "windows": [
+  {
+   "steps": "1-50",
+   "reward": 0.7092,
+   "correct": 0.6931,
+   "executed": 0.8538,
+   "executed_wrong": 0.1606,
+   "zero_var_groups": 0.35,
+   "kl": 0.0001,
+   "completion_tokens": 34.4694,
+   "completion_tokens_p95": 60.96,
+   "truncated": 0.0025,
+   "gen_s": 25.1024,
+   "reward_s": 0.0104,
+   "ref_s": 8.1598,
+   "train_s": 37.951,
+   "peak_gib": 6.545,
+   "fail_no_sql": 0.0,
+   "fail_guard": 0.0,
+   "fail_timeout": 0.0,
+   "fail_syntax": 0.01,
+   "fail_no_such_column": 0.1081,
+   "fail_no_such_table": 0.0138,
+   "fail_other": 0.0119,
+   "flag_empty_result": 0.0362,
+   "flag_added_limit": 0.0181,
+   "flag_select_star": 0.0031,
+   "flag_row_cap": 0.0,
+   "flag_row_flood": 0.0056,
+   "flag_truncated": 0.0025
+  },
+  {
+   "steps": "51-100",
+   "reward": 0.7176,
+   "correct": 0.705,
+   "executed": 0.8306,
+   "executed_wrong": 0.1256,
+   "zero_var_groups": 0.395,
+   "kl": 0.0009,
+   "completion_tokens": 32.52,
+   "completion_tokens_p95": 61.33,
+   "truncated": 0.0013,
+   "gen_s": 23.7332,
+   "reward_s": 0.0144,
+   "ref_s": 7.851,
+   "train_s": 36.7772,
+   "peak_gib": 6.6926,
+   "fail_no_sql": 0.0,
+   "fail_guard": 0.0,
+   "fail_timeout": 0.0,
+   "fail_syntax": 0.015,
+   "fail_no_such_column": 0.1306,
+   "fail_no_such_table": 0.0112,
+   "fail_other": 0.0112,
+   "flag_empty_result": 0.0169,
+   "flag_added_limit": 0.015,
+   "flag_select_star": 0.0031,
+   "flag_row_cap": 0.0,
+   "flag_row_flood": 0.0,
+   "flag_truncated": 0.0013
+  },
+  {
+   "steps": "101-150",
+   "reward": 0.7845,
+   "correct": 0.7725,
+   "executed": 0.8925,
+   "executed_wrong": 0.12,
+   "zero_var_groups": 0.48,
+   "kl": 0.0019,
+   "completion_tokens": 31.1269,
+   "completion_tokens_p95": 54.114,
+   "truncated": 0.0019,
+   "gen_s": 22.7604,
+   "reward_s": 0.0104,
+   "ref_s": 7.8232,
+   "train_s": 36.5334,
+   "peak_gib": 6.7414,
+   "fail_no_sql": 0.0,
+   "fail_guard": 0.0006,
+   "fail_timeout": 0.0,
+   "fail_syntax": 0.0056,
+   "fail_no_such_column": 0.08,
+   "fail_no_such_table": 0.0094,
+   "fail_other": 0.01,
+   "flag_empty_result": 0.0225,
+   "flag_added_limit": 0.0175,
+   "flag_select_star": 0.0037,
+   "flag_row_cap": 0.0,
+   "flag_row_flood": 0.0013,
+   "flag_truncated": 0.0019
+  },
+  {
+   "steps": "151-200",
+   "reward": 0.783,
+   "correct": 0.7675,
+   "executed": 0.9225,
+   "executed_wrong": 0.155,
+   "zero_var_groups": 0.505,
+   "kl": 0.0043,
+   "completion_tokens": 30.8481,
+   "completion_tokens_p95": 53.479,
+   "truncated": 0.0031,
+   "gen_s": 24.2856,
+   "reward_s": 0.084,
+   "ref_s": 8.3426,
+   "train_s": 39.1578,
+   "peak_gib": 6.7348,
+   "fail_no_sql": 0.0,
+   "fail_guard": 0.0006,
+   "fail_timeout": 0.0,
+   "fail_syntax": 0.0094,
+   "fail_no_such_column": 0.0469,
+   "fail_no_such_table": 0.0088,
+   "fail_other": 0.0088,
+   "flag_empty_result": 0.0312,
+   "flag_added_limit": 0.0037,
+   "flag_select_star": 0.0006,
+   "flag_row_cap": 0.0,
+   "flag_row_flood": 0.0081,
+   "flag_truncated": 0.0031
+  },
+  {
+   "steps": "201-250",
+   "reward": 0.8098,
+   "correct": 0.7969,
+   "executed": 0.9263,
+   "executed_wrong": 0.1294,
+   "zero_var_groups": 0.625,
+   "kl": 0.0087,
+   "completion_tokens": 30.1112,
+   "completion_tokens_p95": 55.86,
+   "truncated": 0.0025,
+   "gen_s": 22.7054,
+   "reward_s": 0.013,
+   "ref_s": 7.9198,
+   "train_s": 37.0644,
+   "peak_gib": 6.7532,
+   "fail_no_sql": 0.0,
+   "fail_guard": 0.0006,
+   "fail_timeout": 0.0,
+   "fail_syntax": 0.0075,
+   "fail_no_such_column": 0.05,
+   "fail_no_such_table": 0.0037,
+   "fail_other": 0.0094,
+   "flag_empty_result": 0.0144,
+   "flag_added_limit": 0.0063,
+   "flag_select_star": 0.0013,
+   "flag_row_cap": 0.0,
+   "flag_row_flood": 0.0037,
+   "flag_truncated": 0.0025
+  },
+  {
+   "steps": "251-300",
+   "reward": 0.8093,
+   "correct": 0.7956,
+   "executed": 0.9319,
+   "executed_wrong": 0.1363,
+   "zero_var_groups": 0.665,
+   "kl": 0.0118,
+   "completion_tokens": 32.2044,
+   "completion_tokens_p95": 57.301,
+   "truncated": 0.0031,
+   "gen_s": 22.4988,
+   "reward_s": 0.0122,
+   "ref_s": 7.998,
+   "train_s": 37.3208,
+   "peak_gib": 6.6524,
+   "fail_no_sql": 0.0,
+   "fail_guard": 0.0,
+   "fail_timeout": 0.0,
+   "fail_syntax": 0.0056,
+   "fail_no_such_column": 0.0525,
+   "fail_no_such_table": 0.0037,
+   "fail_other": 0.0031,
+   "flag_empty_result": 0.0181,
+   "flag_added_limit": 0.005,
+   "flag_select_star": 0.0,
+   "flag_row_cap": 0.0,
+   "flag_row_flood": 0.0,
+   "flag_truncated": 0.0031
+  }
+ ],
+ "flag_examples": {
+  "empty_result": [
+   {
+    "step": 1,
+    "prompt": "train_spider-6239",
+    "sql": "SELECT rank FROM captain WHERE class = \"Cutter\" INTERSECT SELECT rank FROM captain WHERE class = \"Armed Schooner\"",
+    "reward": 0.1,
+    "correct": false,
+    "executed": true,
+    "flags": [
+     "empty_result"
+    ],
+    "question": "What are the ranks of captains that are both in the Cutter and Armed schooner classes?",
+    "gold": "SELECT rank FROM captain WHERE CLASS  =  'Cutter' INTERSECT SELECT rank FROM captain WHERE CLASS  =  'Armed schooner'",
+    "db_id": "ship_1"
+   },
+   {
+    "step": 1,
+    "prompt": "train_spider-6239",
+    "sql": "SELECT rank FROM captain WHERE rank = \"Cutter\" INTERSECT SELECT rank FROM captain WHERE rank = \"Armed Schooner\"",
+    "reward": 0.1,
+    "correct": false,
+    "executed": true,
+    "flags": [
+     "empty_result"
+    ],
+    "question": "What are the ranks of captains that are both in the Cutter and Armed schooner classes?",
+    "gold": "SELECT rank FROM captain WHERE CLASS  =  'Cutter' INTERSECT SELECT rank FROM captain WHERE CLASS  =  'Armed schooner'",
+    "db_id": "ship_1"
+   }
+  ],
+  "added_limit": [
+   {
+    "step": 3,
+    "prompt": "train_spider-5744",
+    "sql": "SELECT avg(age) FROM student WHERE StuID IN (SELECT stuid FROM lives_in GROUP BY stuid ORDER BY count(*) DESC LIMIT 1)",
+    "reward": 0.1,
+    "correct": false,
+    "executed": true,
+    "flags": [
+     "added_limit"
+    ],
+    "question": "Find the average age of students who are living in the dorm with the largest capacity.",
+    "gold": "SELECT avg(T1.age) FROM student AS T1 JOIN lives_in AS T2 ON T1.stuid  =  T2.stuid JOIN dorm AS T3 ON T3.dormid  =  T2.dormid WHERE T3.student_capacity  =  (SELECT max(student_capacity) FROM dorm)",
+    "db_id": "dorm_1"
+   },
+   {
+    "step": 3,
+    "prompt": "train_spider-5744",
+    "sql": "SELECT avg(age) FROM student WHERE StuID IN (SELECT stuid FROM lives_in WHERE dormid = (SELECT dormid FROM dorm ORDER BY student_capacity DESC LIMIT 1))",
+    "reward": 1.0,
+    "correct": true,
+    "executed": true,
+    "flags": [
+     "added_limit"
+    ],
+    "question": "Find the average age of students who are living in the dorm with the largest capacity.",
+    "gold": "SELECT avg(T1.age) FROM student AS T1 JOIN lives_in AS T2 ON T1.stuid  =  T2.stuid JOIN dorm AS T3 ON T3.dormid  =  T2.dormid WHERE T3.student_capacity  =  (SELECT max(student_capacity) FROM dorm)",
+    "db_id": "dorm_1"
+   }
+  ],
+  "select_star": [
+   {
+    "step": 7,
+    "prompt": "train_spider-5941",
+    "sql": "SELECT * FROM HOTELS ORDER BY price_range LIMIT 3",
+    "reward": 0.1,
+    "correct": false,
+    "executed": true,
+    "flags": [
+     "select_star"
+    ],
+    "question": "Show the details of the top 3 most expensive hotels.",
+    "gold": "SELECT other_hotel_details FROM HOTELS ORDER BY price_range DESC LIMIT 3",
+    "db_id": "cre_Theme_park"
+   },
+   {
+    "step": 18,
+    "prompt": "train_spider-2834",
+    "sql": "SELECT * FROM STUDENT WHERE age > 18 AND major = 600",
+    "reward": 0.1,
+    "correct": false,
+    "executed": true,
+    "flags": [
+     "select_star"
+    ],
+    "question": "Which student's age is older than 18 and is majoring in 600? List each student's first and last name.",
+    "gold": "SELECT Fname , Lname FROM Student WHERE Age  >  18 AND Major = 600;",
+    "db_id": "restaurant_1"
+   }
+  ],
+  "row_cap": [],
+  "row_flood": [
+   {
+    "step": 17,
+    "prompt": "train_spider-2617",
+    "sql": "SELECT T1.bedType , T1.roomName FROM Rooms AS T1 JOIN Reservations AS T2 ON T1.RoomId = T2.Room WHERE T1.decor = \"traditional\"",
+    "reward": 0.1,
+    "correct": false,
+    "executed": true,
+    "flags": [
+     "row_flood"
+    ],
+    "question": "What are the bed type and name of all the rooms with traditional decor?",
+    "gold": "SELECT roomName ,  bedType FROM Rooms WHERE decor = \"traditional\";",
+    "db_id": "inn_1"
+   },
+   {
+    "step": 32,
+    "prompt": "train_spider-2358",
+    "sql": "SELECT T1.campus , T2.degrees FROM campuses AS T1 JOIN degrees AS T2 ON T1.id = T2.campus WHERE t1.county = \"Orange\"",
+    "reward": 0.1,
+    "correct": false,
+    "executed": true,
+    "flags": [
+     "row_flood"
+    ],
+    "question": "For each Orange county campus, report the number of degrees granted after 2000.",
+    "gold": "SELECT T1.campus ,  sum(T2.degrees) FROM campuses AS T1 JOIN degrees AS T2 ON T1.id  =  T2.campus WHERE T1.county  =  \"Orange\" AND T2.year  >=  2000 GROUP BY T1.campus",
+    "db_id": "csu_1"
+   }
+  ],
+  "truncated": [
+   {
+    "step": 4,
+    "prompt": "train_spider-2284",
+    "sql": "SELECT T4.Date_of_Birth FROM entrepreneur AS T1 JOIN investment AS T2 ON T1.Entrepreneur_ID = T2.Entrepreneur_ID JOIN people AS T3 ON T2.People_ID = T3.People_ID JOIN people AS T4 ON T3.People_ID = T4.People_ID WHERE T3.Name = \"Simon Woodroffe\" INTERSECT SELECT T4.Date_of_Birth FROM entrepreneur AS T1 JOIN investment AS T2 ON T1.Entrepreneur_ID = T2.Entrepreneur_ID JOIN people AS T3 ON T2.People_ID = T3.Pe",
+    "reward": 0.0,
+    "correct": false,
+    "executed": false,
+    "flags": [
+     "truncated"
+    ],
+    "question": "Return the dates of birth for entrepreneurs who have either the investor Simon Woodroffe or Peter Jones.",
+    "gold": "SELECT T2.Date_of_Birth FROM entrepreneur AS T1 JOIN people AS T2 ON T1.People_ID  =  T2.People_ID WHERE T1.Investor  =  \"Simon Woodroffe\" OR T1.Investor  =  \"Peter Jones\"",
+    "db_id": "entrepreneur"
+   },
+   {
+    "step": 29,
+    "prompt": "train_spider-6291",
+    "sql": "SELECT T1.city FROM city AS T1 JOIN temperature AS T2 ON T1.city_id = T2.city_id INTERSECT SELECT t3.city FROM city AS t3 JOIN hosting_city AS t4 ON t3.city_id = t4.host_city WHERE host_city = ( SELECT T1.city FROM city AS T1 JOIN temperature AS T2 ON T1.city_id = T2.city_id INTERSECT SELECT T3.city FROM city AS T3 JOIN temperature AS T2 ON T3.city_id = T2.city_id ) AND T2.mar > T2.jul EXCEPT SELECT t3.city FROM",
+    "reward": 0.0,
+    "correct": false,
+    "executed": false,
+    "flags": [
+     "truncated"
+    ],
+    "question": "Which cities have lower temperature in March than in July and have been once host cities?",
+    "gold": "SELECT T1.city FROM city AS T1 JOIN temperature AS T2 ON T1.city_id  =  T2.city_id WHERE T2.Mar  <  T2.Jul INTERSECT SELECT T3.city FROM city AS T3 JOIN hosting_city AS T4 ON T3.city_id  =  T4.host_city",
+    "db_id": "city_record"
+   }
+  ]
+ },
+ "ablation": {
+  "common_step": 150,
+  "val_ex": {
+   "main": 0.715,
+   "ablation": 0.7
+  },
+  "monitors_steps_1_to_common": {
+   "reward": {
+    "main": 0.7371,
+    "ablation": 0.7269
+   },
+   "correct": {
+    "main": 0.7235,
+    "ablation": 0.7269
+   },
+   "executed": {
+    "main": 0.859,
+    "ablation": 0.8579
+   },
+   "executed_wrong": {
+    "main": 0.1354,
+    "ablation": 0.131
+   },
+   "zero_var_groups": {
+    "main": 0.4083,
+    "ablation": 0.505
+   },
+   "kl": {
+    "main": 0.001,
+    "ablation": 0.0009
+   },
+   "completion_tokens": {
+    "main": 32.7054,
+    "ablation": 32.6752
+   }
+  },
+  "failure_share_1_to_common": {
+   "main": 0.1392,
+   "ablation": 0.1408
+  }
+ },
+ "sft_failures_fixed": {
+  "total": 30,
+  "fixed": 7,
+  "by_category": {
+   "wrong table/column": {
+    "n": 7,
+    "fixed": 3
+   },
+   "wrong join path": {
+    "n": 11,
+    "fixed": 3
+   },
+   "question ambiguous": {
+    "n": 4,
+    "fixed": 0
+   },
+   "aggregation/grouping": {
+    "n": 3,
+    "fixed": 0
+   },
+   "gold arguably wrong": {
+    "n": 2,
+    "fixed": 0
+   },
+   "wrong value or literal": {
+    "n": 2,
+    "fixed": 0
+   },
+   "other": {
+    "n": 1,
+    "fixed": 1
+   }
+  },
+  "fixed_ids": [
+   "train_spider-2647",
+   "train_spider-56",
+   "train_spider-6008",
+   "train_spider-6038",
+   "train_spider-6408",
+   "train_spider-71",
+   "train_spider-920"
+  ]
+ }
+}

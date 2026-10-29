@@ -6,17 +6,23 @@ and tests and report directly. Never print any token, key or environment-variabl
 Run long commands in the foreground or wait on their process id; never write a polling loop that waits for a log
 line. Section 0 says where we are.
 
-## 0. Status (updated 2026-10-29)
+## 0. Status (updated 2026-10-30)
 
-**M2 done, start at M3.** SFT adapter (private Hub repo `DavutKursun/sql-tuner-sft`; LoRA r 16, `max_len` 4,096 keeps
-98.98% of train, 2 epochs, the lowest-val-loss checkpoint = step 200 of 996): val EX **74.0%** greedy, **78.7%** vote-8,
-against base zero-shot 69.4% and Claude Haiku 5.5 3-shot 85.0%. Paired SFT − base +4.7 (CI by question [+1.1, +8.7];
-by database [−2.1, +12.0], includes 0); vote-8 − SFT +4.7 (both CIs exclude 0). Of 30 SFT failures 18 are schema
-linking (11 join path, mostly a missing join that fails with "no such column"), 3 aggregation, 2 values, 6 data
-problems — DESIGN.md §3. Open for M3: SFT checkpoints were chosen by val loss, which rose after step 200; choose by val
-EX. HF Jobs launcher (`scripts/run_hf_job.py`) is ready but the HF token lacks `job.write`: its smoke test waits for
-Davut. Kaggle (Oct 2026): Python 3.13, torch 2.11.0+cu128, transformers 5.16.1, peft 0.20.0 (pip keeps them; CI tests
-5.16.1, 4.57.1 and latest); the kernel uninstalls torchao 0.10 (PEFT rejects it). 49 tests.
+**M3 done, start at M4.** GRPO adapter (private Hub repo `DavutKursun/sql-tuner-grpo`; a new LoRA r 16 on the merged
+SFT model; 300 steps, G 8 x 4 prompts, beta 0.02, lr 5e-6, reward 1 / 0.1 / 0, max_new_tokens 128; chosen step 300 by
+val-subset EX 75.0%): val EX **78.2%** greedy, **79.7%** vote-8, against SFT 74.0% / 78.7% and Claude Haiku 5.5 3-shot
+85.0%. Paired GRPO − SFT +4.2 (CI by question [+2.4, +6.1], by database [+2.4, +6.8]); GRPO greedy ~ SFT vote-8
+(−0.5, CI across 0); GRPO vote-8 − Haiku −5.3 (both CIs exclude 0). Easy questions back to the base level (86.0).
+"No such column" halved during training; every hacking flag fell; nothing changed after the run started. Exec bonus 0
+vs 0.1 (150 steps): same behaviour, +1.5 val-subset EX not significant, the bonus keeps 10 points more groups
+informative. DESIGN.md §4. The val subset is part of val: M4's dev is the clean number. For M4 the model loads as
+base + merge `DavutKursun/sql-tuner-sft` + adapter `DavutKursun/sql-tuner-grpo` (`eval_model.py --merge-adapter …
+--adapter …`). HF Jobs still blocked (token lacks `job.write`); all GPU work on Kaggle (17.0 h used this week). 58 tests.
+
+M2 (done): SFT adapter (`DavutKursun/sql-tuner-sft`; `max_len` 4,096, best val loss at step 200 of 996): val EX 74.0%
+greedy, 78.7% vote-8; SFT − base +4.7 (CI by question excludes 0, by database does not). Of 30 SFT failures 18 are
+schema linking — DESIGN.md §3. Kaggle (Oct 2026): Python 3.13, torch 2.11.0+cu128, transformers 5.16.1, peft 0.20.0
+(pip keeps them; CI tests 5.16.1, 4.57.1 and latest); kernels uninstall torchao 0.10 (PEFT rejects it).
 
 M1 (done): base model **Qwen/Qwen2.5-Coder-1.5B-Instruct** (val EX 69.4% zero-shot; Claude Haiku 5.5 3-shot 85.0%,
 Sonnet 5.5 3-shot 94.0% on 300) — `eval/results/base_choice.json`, DESIGN.md §1–2. Prompt keeps 3 example rows per

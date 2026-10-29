@@ -1,0 +1,4418 @@
+{
+  "steps": 150,
+  "planned_steps": 150,
+  "stopped": null,
+  "best_val_ex": 0.71,
+  "best_step": 50,
+  "evals": [
+    {
+      "step": 0,
+      "val_ex": 0.705,
+      "minutes": 3.2,
+      "eval_s": 190.3
+    },
+    {
+      "step": 50,
+      "val_ex": 0.71,
+      "minutes": 67.7,
+      "eval_s": 183.4
+    },
+    {
+      "step": 100,
+      "val_ex": 0.71,
+      "minutes": 129.8,
+      "eval_s": 187.2
+    },
+    {
+      "step": 150,
+      "val_ex": 0.7,
+      "minutes": 190.4,
+      "eval_s": 184.5
+    }
+  ],
+  "minutes": 190.4,
+  "order_hash": "417707811214f916",
+  "rules": {
+    "steps": 150,
+    "prompts_per_step": 4,
+    "group_size": 8,
+    "temperature": 1.0,
+    "max_new_tokens": 128,
+    "lr": 5e-06,
+    "beta": 0.02,
+    "clip_eps": 0.2,
+    "inner_epochs": 1,
+    "loss_agg": "token",
+    "micro_batch": 4,
+    "exec_bonus": 0.0,
+    "skip_db_empty": true,
+    "skip_gold_empty": true,
+    "eval_every": 50,
+    "eval_questions": 200
+  },
+  "examples": {
+    "empty_result": [
+      {
+        "step": 1,
+        "prompt": "train_spider-6239",
+        "sql": "SELECT rank FROM captain WHERE class = \"Cutter\" INTERSECT SELECT rank FROM captain WHERE class = \"Armed Schooner\"",
+        "reward": 0.0,
+        "correct": false,
+        "executed": true,
+        "flags": [
+          "empty_result"
+        ],
+        "question": "What are the ranks of captains that are both in the Cutter and Armed schooner classes?",
+        "gold": "SELECT rank FROM captain WHERE CLASS  =  'Cutter' INTERSECT SELECT rank FROM captain WHERE CLASS  =  'Armed schooner'",
+        "db_id": "ship_1"
+      },
+      {
+        "step": 1,
+        "prompt": "train_spider-6239",
+        "sql": "SELECT rank FROM captain WHERE rank = \"Cutter\" INTERSECT SELECT rank FROM captain WHERE rank = \"Armed Schooner\"",
+        "reward": 0.0,
+        "correct": false,
+        "executed": true,
+        "flags": [
+          "empty_result"
+        ],
+        "question": "What are the ranks of captains that are both in the Cutter and Armed schooner classes?",
+        "gold": "SELECT rank FROM captain WHERE CLASS  =  'Cutter' INTERSECT SELECT rank FROM captain WHERE CLASS  =  'Armed schooner'",
+        "db_id": "ship_1"
+      },
+      {
+        "step": 1,
+        "prompt": "train_spider-6239",
+        "sql": "SELECT rank FROM captain WHERE ship_id IN ( SELECT ship_id FROM ship WHERE CLASS = \"Cutter\" INTERSECT SELECT ship_id FROM ship WHERE CLASS = \"Armed Schooner\" )",
+        "reward": 0.0,
+        "correct": false,
+        "executed": true,
+        "flags": [
+          "empty_result"
+        ],
+        "question": "What are the ranks of captains that are both in the Cutter and Armed schooner classes?",
+        "gold": "SELECT rank FROM captain WHERE CLASS  =  'Cutter' INTERSECT SELECT rank FROM captain WHERE CLASS  =  'Armed schooner'",
+        "db_id": "ship_1"
+      },
+      {
+        "step": 2,
+        "prompt": "train_spider-350",
+        "sql": "SELECT count(*) FROM Aircraft WHERE distance > 1000 INTERSECT SELECT count(*) FROM Aircraft WHERE distance < 5000",
+        "reward": 0.0,
+        "correct": false,
+        "executed": true,
+        "flags": [
+          "empty_result"
+        ],
+        "question": "What is the count of aircrafts that have a distance between 1000 and 5000?",
+        "gold": "SELECT count(*) FROM Aircraft WHERE distance BETWEEN 1000 AND 5000",
+        "db_id": "flight_1"
+      },
+      {
+        "step": 2,
+        "prompt": "train_spider-1883",
+        "sql": "SELECT TIME FROM elimination WHERE ELIMINATION_MOVE = \"Punk\" OR Elimination_MOVE = \"Orton\"",
+        "reward": 0.0,
+        "correct": false,
+        "executed": true,
+        "flags": [
+          "empty_result"
+        ],
+        "question": "What are the times of elimination for any instances in which the elimination was done by Punk or Orton?",
+        "gold": "SELECT TIME FROM elimination WHERE Eliminated_By  =  \"Punk\" OR Eliminated_By  =  \"Orton\"",
+        "db_id": "wrestler"
+      },
+      {
+        "step": 2,
+        "prompt": "train_spider-1883",
+        "sql": "SELECT TIME FROM Elimination WHERE Eliminated_By = \"Punk\" INTERSECT SELECT Time FROM Elimination WHERE Eliminated_By = \"Orton\"",
+        "reward": 0.0,
+        "correct": false,
+        "executed": true,
+        "flags": [
+          "empty_result"
+        ],
+        "question": "What are the times of elimination for any instances in which the elimination was done by Punk or Orton?",
+        "gold": "SELECT TIME FROM elimination WHERE Eliminated_By  =  \"Punk\" OR Eliminated_By  =  \"Orton\"",
+        "db_id": "wrestler"
+      }
+    ],
+    "added_limit": [
+      {
+        "step": 3,
+        "prompt": "train_spider-5744",
+        "sql": "SELECT avg(age) FROM student WHERE StuID IN (SELECT stuid FROM lives_in GROUP BY stuid ORDER BY count(*) DESC LIMIT 1)",
+        "reward": 0.0,
+        "correct": false,
+        "executed": true,
+        "flags": [
+          "added_limit"
+        ],
+        "question": "Find the average age of students who are living in the dorm with the largest capacity.",
+        "gold": "SELECT avg(T1.age) FROM student AS T1 JOIN lives_in AS T2 ON T1.stuid  =  T2.stuid JOIN dorm AS T3 ON T3.dormid  =  T2.dormid WHERE T3.student_capacity  =  (SELECT max(student_capacity) FROM dorm)",
+        "db_id": "dorm_1"
+      },
+      {
+        "step": 3,
+        "prompt": "train_spider-5744",
+        "sql": "SELECT avg(age) FROM student WHERE StuID IN (SELECT stuid FROM lives_in WHERE dormid = (SELECT dormid FROM dorm ORDER BY student_capacity DESC LIMIT 1))",
+        "reward": 1.0,
+        "correct": true,
+        "executed": true,
+        "flags": [
+          "added_limit"
+        ],
+        "question": "Find the average age of students who are living in the dorm with the largest capacity.",
+        "gold": "SELECT avg(T1.age) FROM student AS T1 JOIN lives_in AS T2 ON T1.stuid  =  T2.stuid JOIN dorm AS T3 ON T3.dormid  =  T2.dormid WHERE T3.student_capacity  =  (SELECT max(student_capacity) FROM dorm)",
+        "db_id": "dorm_1"
+      },
+      {
+        "step": 3,
+        "prompt": "train_spider-5744",
+        "sql": "SELECT avg(age) FROM student WHERE StuID IN ( SELECT StuID FROM lives_in WHERE dormid = ( SELECT dormid FROM dorm ORDER BY student_capacity DESC LIMIT 1 ) )",
+        "reward": 1.0,
+        "correct": true,
+        "executed": true,
+        "flags": [
+          "added_limit"
+        ],
+        "question": "Find the average age of students who are living in the dorm with the largest capacity.",
+        "gold": "SELECT avg(T1.age) FROM student AS T1 JOIN lives_in AS T2 ON T1.stuid  =  T2.stuid JOIN dorm AS T3 ON T3.dormid  =  T2.dormid WHERE T3.student_capacity  =  (SELECT max(student_capacity) FROM dorm)",
+        "db_id": "dorm_1"
+      },
+      {
+        "step": 3,
+        "prompt": "train_spider-5744",
+        "sql": "SELECT avg(age) FROM student WHERE studID = (SELECT stuid FROM lives_inWHERE dormid = (SELECT dormid FROM dorm ORDER BY student_capacity DESC LIMIT 1)",
+        "reward": 0.0,
+        "correct": false,
+        "executed": false,
+        "flags": [
+          "added_limit"
+        ],
+        "question": "Find the average age of students who are living in the dorm with the largest capacity.",
+        "gold": "SELECT avg(T1.age) FROM student AS T1 JOIN lives_in AS T2 ON T1.stuid  =  T2.stuid JOIN dorm AS T3 ON T3.dormid  =  T2.dormid WHERE T3.student_capacity  =  (SELECT max(student_capacity) FROM dorm)",
+        "db_id": "dorm_1"
+      },
+      {
+        "step": 3,
+        "prompt": "train_spider-5744",
+        "sql": "SELECT avg(age) FROM student WHERE studid IN (SELECT stuid FROM dorm AS T1 JOIN lives_in AS T2 ON T1.dormid = T2.dormid ORDER BY student_capacity DESC LIMIT 1)",
+        "reward": 0.0,
+        "correct": false,
+        "executed": false,
+        "flags": [
+          "added_limit"
+        ],
+        "question": "Find the average age of students who are living in the dorm with the largest capacity.",
+        "gold": "SELECT avg(T1.age) FROM student AS T1 JOIN lives_in AS T2 ON T1.stuid  =  T2.stuid JOIN dorm AS T3 ON T3.dormid  =  T2.dormid WHERE T3.student_capacity  =  (SELECT max(student_capacity) FROM dorm)",
+        "db_id": "dorm_1"
+      },
+      {
+        "step": 3,
+        "prompt": "train_spider-5744",
+        "sql": "SELECT avg(age) FROM student WHERE dormid = (SELECT dormid FROM lives_in ORDER BY room_number DESC LIMIT 1)",
+        "reward": 0.0,
+        "correct": false,
+        "executed": false,
+        "flags": [
+          "added_limit"
+        ],
+        "question": "Find the average age of students who are living in the dorm with the largest capacity.",
+        "gold": "SELECT avg(T1.age) FROM student AS T1 JOIN lives_in AS T2 ON T1.stuid  =  T2.stuid JOIN dorm AS T3 ON T3.dormid  =  T2.dormid WHERE T3.student_capacity  =  (SELECT max(student_capacity) FROM dorm)",
+        "db_id": "dorm_1"
+      }
+    ],
+    "truncated": [
+      {
+        "step": 4,
+        "prompt": "train_spider-2284",
+        "sql": "SELECT T4.Date_of_Birth FROM entrepreneur AS T1 JOIN investment AS T2 ON T1.Entrepreneur_ID = T2.Entrepreneur_ID JOIN people AS T3 ON T2.People_ID = T3.People_ID JOIN people AS T4 ON T3.People_ID = T4.People_ID WHERE T3.Name = \"Simon Woodroffe\" INTERSECT SELECT T4.Date_of_Birth FROM entrepreneur AS T1 JOIN investment AS T2 ON T1.Entrepreneur_ID = T2.Entrepreneur_ID JOIN people AS T3 ON T2.People_ID = T3.Pe",
+        "reward": 0.0,
+        "correct": false,
+        "executed": false,
+        "flags": [
+          "truncated"
+        ],
+        "question": "Return the dates of birth for entrepreneurs who have either the investor Simon Woodroffe or Peter Jones.",
+        "gold": "SELECT T2.Date_of_Birth FROM entrepreneur AS T1 JOIN people AS T2 ON T1.People_ID  =  T2.People_ID WHERE T1.Investor  =  \"Simon Woodroffe\" OR T1.Investor  =  \"Peter Jones\"",
+        "db_id": "entrepreneur"
+      },
+      {
+        "step": 42,
+        "prompt": "train_spider-4943",
+        "sql": "SELECT T3.District_name FROM store_product AS T1 JOIN product AS T2 ON T1.Product_ID = T2.product_ID JOIN store_district AS T3 ON T1.Store_id = T3.store_id JOIN store AS T4 ON T3.store_id = T4.store_id WHERE T4.type = 'City Mall' INTERSECT SELECT T3.District_name FROM store_product AS T1 JOIN product AS T2 ON T1.Product_ID = T2.product_id JOIN store_district AS T3 ON T1.Store_id = T3.store_id JOIN store AS T4 ON T3.store_id = T",
+        "reward": 0.0,
+        "correct": false,
+        "executed": false,
+        "flags": [
+          "truncated"
+        ],
+        "question": "What are the names of the districts that have both mall and village store style shops?",
+        "gold": "SELECT t3.District_name FROM store AS t1 JOIN store_district AS t2 ON t1.store_id  =  t2.store_id JOIN district AS t3 ON t2.district_id  =  t3.district_id WHERE t1.Type  =  \"City Mall\" INTERSECT SELECT t3.District_name FROM store AS t1 JOIN store_district AS t2 ON t1.store_id  =  t2.store_id JOIN district AS t3 ON t2.district_id  =  t3.district_id WHERE t1.Type  =  \"Village Store\"",
+        "db_id": "store_product"
+      },
+      {
+        "step": 50,
+        "prompt": "train_spider-534",
+        "sql": "SELECT count(*) FROM Student WHERE age > 18 EXCEPT SELECT count(*) FROM Student EXCEPT SELECT T2.stuid FROM has_allergy AS T1 JOIN Student AS T2 ON T1.stuid = T2.stuid EXCEPT SELECT T2.stuid FROM has_allergy AS T1 JOIN Allergy_Type AS T2 ON T1.allergy = T2.allergy WHERE T2.allergytype = \"food\" EXCEPT SELECT T2.stuid FROM has_allergy AS T1 JOIN Allergy_Type AS T2 ON T1.allergy = T2.allergy WHERE T2.allergytype",
+        "reward": 0.0,
+        "correct": false,
+        "executed": false,
+        "flags": [
+          "truncated"
+        ],
+        "question": "How many students are over 18 and do not have allergy to food type or animal type?",
+        "gold": "SELECT count(*) FROM Student WHERE age  >  18 AND StuID NOT IN ( SELECT StuID FROM Has_allergy AS T1 JOIN Allergy_Type AS T2 ON T1.Allergy  =  T2.Allergy WHERE T2.allergytype  =  \"food\" OR T2.allergytype  =  \"animal\")",
+        "db_id": "allergy_1"
+      },
+      {
+        "step": 81,
+        "prompt": "train_spider-4630",
+        "sql": "SELECT T1.customer_name , T1.payment_method FROM customers AS T1 JOIN mailshot_customers AS T2 ON T1.customer_id = T2.customer_id JOIN mailshot_campaigns AS T3 ON T3.mailshot_id = T2.mailshot_id WHERE T3.outcome_code = \"Order\" INTERSECT SELECT T1.customer_name , T1.payment_method FROM customers AS T1 JOIN mailshot_customers AS T2 ON T1.customer_id = T2.customer_id JOIN mailshot_campaigns AS T3 ON T3.mailshot_id = T2.mailshot_id WHERE T3.outcome_code",
+        "reward": 0.0,
+        "correct": false,
+        "executed": false,
+        "flags": [
+          "truncated"
+        ],
+        "question": "What are the name and payment method of customers who have both mailshots in 'Order' outcome and mailshots in 'No Response' outcome.",
+        "gold": "SELECT T2.customer_name ,  T2.payment_method FROM mailshot_customers AS T1 JOIN customers AS T2 ON T1.customer_id  =  T2.customer_id WHERE T1.outcome_code  =  'Order' INTERSECT SELECT T2.customer_name ,  T2.payment_method FROM mailshot_customers AS T1 JOIN customers AS T2 ON T1.customer_id  =  T2.customer_id WHERE T1.outcome_code  =  'No Response'",
+        "db_id": "customers_campaigns_ecommerce"
+      },
+      {
+        "step": 87,
+        "prompt": "train_spider-1401",
+        "sql": "SELECT T2.building , T2.capacity , T1.salary , T1.dept_name FROM instructor AS T1 JOIN classroom AS T2 ON T1.dept_name = T2.building WHERE T1.salary = (SELECT min(salary) FROM instructor AS T1 JOIN classroom AS T2 ON T1.dept_name = T2.building WHERE T1.dept_name = (SELECT dept_name FROM instructor GROUP BY dept_name HAVING avg(T1.salary) > ( SELECT avg(T1.salary) FROM instructor AS T1 JOIN classroom AS T2 ON T1.dept_name = T2.building",
+        "reward": 0.0,
+        "correct": false,
+        "executed": false,
+        "flags": [
+          "truncated"
+        ],
+        "question": "What is the lowest salary in departments with average salary greater than the overall average.",
+        "gold": "SELECT min(salary) ,  dept_name FROM instructor GROUP BY dept_name HAVING avg(salary)  >  (SELECT avg(salary) FROM instructor)",
+        "db_id": "college_2"
+      },
+      {
+        "step": 116,
+        "prompt": "train_spider-1157",
+        "sql": "SELECT T2.Name FROM body_builder AS T1 JOIN people AS T2 ON T1.People_ID = T2.People_ID WHERE T1.Total > 300",
+        "reward": 0.0,
+        "correct": false,
+        "executed": false,
+        "flags": [
+          "truncated"
+        ],
+        "question": "What are the names of body builders whose total score is higher than 300?",
+        "gold": "SELECT T2.Name FROM body_builder AS T1 JOIN people AS T2 ON T1.People_ID  =  T2.People_ID WHERE T1.Total  >  300",
+        "db_id": "body_builder"
+      }
+    ],
+    "select_star": [
+      {
+        "step": 7,
+        "prompt": "train_spider-5941",
+        "sql": "SELECT * FROM HOTELS ORDER BY price_range LIMIT 3",
+        "reward": 0.0,
+        "correct": false,
+        "executed": true,
+        "flags": [
+          "select_star"
+        ],
+        "question": "Show the details of the top 3 most expensive hotels.",
+        "gold": "SELECT other_hotel_details FROM HOTELS ORDER BY price_range DESC LIMIT 3",
+        "db_id": "cre_Theme_park"
+      },
+      {
+        "step": 18,
+        "prompt": "train_spider-2834",
+        "sql": "SELECT * FROM Student WHERE Age > 18 AND major = 600",
+        "reward": 0.0,
+        "correct": false,
+        "executed": true,
+        "flags": [
+          "select_star"
+        ],
+        "question": "Which student's age is older than 18 and is majoring in 600? List each student's first and last name.",
+        "gold": "SELECT Fname , Lname FROM Student WHERE Age  >  18 AND Major = 600;",
+        "db_id": "restaurant_1"
+      },
+      {
+        "step": 43,
+        "prompt": "train_spider-2784",
+        "sql": "SELECT * FROM county ORDER BY Population ASC LIMIT 3",
+        "reward": 0.0,
+        "correct": false,
+        "executed": true,
+        "flags": [
+          "select_star"
+        ],
+        "question": "Show the 3 counties with the smallest population.",
+        "gold": "SELECT County_name FROM county ORDER BY Population ASC LIMIT 3",
+        "db_id": "election"
+      },
+      {
+        "step": 48,
+        "prompt": "train_spider-4163",
+        "sql": "SELECT * FROM Ref_Calendar",
+        "reward": 1.0,
+        "correct": true,
+        "executed": true,
+        "flags": [
+          "select_star"
+        ],
+        "question": "What are all the calendar dates and day Numbers?",
+        "gold": "SELECT calendar_date ,  day_Number FROM Ref_calendar",
+        "db_id": "cre_Doc_Tracking_DB"
+      },
+      {
+        "step": 65,
+        "prompt": "train_spider-4193",
+        "sql": "SELECT * FROM ROLES WHERE Role_Code = \"MG\"",
+        "reward": 0.0,
+        "correct": false,
+        "executed": true,
+        "flags": [
+          "select_star"
+        ],
+        "question": "Find the name and description of the role with code \"MG\".",
+        "gold": "SELECT role_name ,  role_description FROM ROLES WHERE role_code  =  \"MG\"",
+        "db_id": "cre_Doc_Tracking_DB"
+      },
+      {
+        "step": 135,
+        "prompt": "train_spider-4934",
+        "sql": "SELECT * FROM product WHERE product LIKE '%Scanner%'",
+        "reward": 0.0,
+        "correct": false,
+        "executed": true,
+        "flags": [
+          "select_star"
+        ],
+        "question": "Find all the product whose name contains the word \"Scanner\".",
+        "gold": "SELECT product FROM product WHERE product LIKE \"%Scanner%\"",
+        "db_id": "store_product"
+      }
+    ],
+    "row_flood": [
+      {
+        "step": 19,
+        "prompt": "train_spider-6683",
+        "sql": "SELECT t3.first_name , t3.last_name FROM addresses AS t1 JOIN customer_payments AS t2 ON t2.customer_id = t3.customer_id JOIN customers AS t3 ON t3.customer_id = t2.customer_id WHERE t1.city = \"Lockmanfurt\"",
+        "reward": 0.0,
+        "correct": false,
+        "executed": true,
+        "flags": [
+          "row_flood"
+        ],
+        "question": "What are the first and last names of all customers who lived in Lockmanfurt?",
+        "gold": "SELECT T1.first_name ,  T1.last_name FROM Customers AS T1 JOIN Addresses AS T2 ON T1.customer_address_id = T2.address_id WHERE T2.city = \"Lockmanfurt\";",
+        "db_id": "driving_school"
+      },
+      {
+        "step": 32,
+        "prompt": "train_spider-3520",
+        "sql": "SELECT first_name , last_name , city FROM locations , employees WHERE first_name LIKE \"%z%\"",
+        "reward": 0.0,
+        "correct": false,
+        "executed": true,
+        "flags": [
+          "row_flood"
+        ],
+        "question": "What are the full names and cities of employees who have the letter Z in their first names?",
+        "gold": "SELECT T1.first_name ,  T1.last_name ,  T3.city FROM employees AS T1 JOIN departments AS T2 ON T1.department_id  =  T2.department_id JOIN locations AS T3 ON T2.location_id  =  T3.location_id WHERE T1.first_name LIKE '%z%'",
+        "db_id": "hr_1"
+      },
+      {
+        "step": 49,
+        "prompt": "train_spider-6711",
+        "sql": "SELECT distinct last_name FROM customers UNION SELECT distinct last_name FROM staff",
+        "reward": 0.0,
+        "correct": false,
+        "executed": true,
+        "flags": [
+          "row_flood"
+        ],
+        "question": "What are the last names that are used by customers and staff?",
+        "gold": "SELECT last_name FROM Customers INTERSECT SELECT last_name FROM Staff",
+        "db_id": "driving_school"
+      },
+      {
+        "step": 49,
+        "prompt": "train_spider-6711",
+        "sql": "SELECT last_name FROM customers EXCEPT SELECT last_name FROM staff",
+        "reward": 0.0,
+        "correct": false,
+        "executed": true,
+        "flags": [
+          "row_flood"
+        ],
+        "question": "What are the last names that are used by customers and staff?",
+        "gold": "SELECT last_name FROM Customers INTERSECT SELECT last_name FROM Staff",
+        "db_id": "driving_school"
+      },
+      {
+        "step": 49,
+        "prompt": "train_spider-6711",
+        "sql": "SELECT last_name FROM customers UNION SELECT last_name FROM staff",
+        "reward": 0.0,
+        "correct": false,
+        "executed": true,
+        "flags": [
+          "row_flood"
+        ],
+        "question": "What are the last names that are used by customers and staff?",
+        "gold": "SELECT last_name FROM Customers INTERSECT SELECT last_name FROM Staff",
+        "db_id": "driving_school"
+      },
+      {
+        "step": 49,
+        "prompt": "train_spider-6711",
+        "sql": "SELECT DISTINCT last_name FROM Customers UNION SELECT DISTINCT last_name FROM Staff",
+        "reward": 0.0,
+        "correct": false,
+        "executed": true,
+        "flags": [
+          "row_flood"
+        ],
+        "question": "What are the last names that are used by customers and staff?",
+        "gold": "SELECT last_name FROM Customers INTERSECT SELECT last_name FROM Staff",
+        "db_id": "driving_school"
+      }
+    ]
+  },
+  "history": [
+    {
+      "reward": 0.5625,
+      "correct": 0.5625,
+      "executed": 0.78125,
+      "executed_wrong": 0.21875,
+      "failures": {
+        "no_such_column": 0.15625,
+        "other": 0.0625
+      },
+      "zero_var_groups": 0.0,
+      "loss": 0.07453778223134577,
+      "kl": 0.0,
+      "completion_tokens": 45.875,
+      "completion_tokens_p95": 71.9,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.09375
+      },
+      "gen_s": 24.28,
+      "reward_s": 0.01,
+      "ref_s": 5.97,
+      "train_s": 28.95,
+      "peak_gib": 6.82,
+      "step": 1,
+      "minutes": 4.18
+    },
+    {
+      "reward": 0.78125,
+      "correct": 0.78125,
+      "executed": 0.90625,
+      "executed_wrong": 0.125,
+      "failures": {
+        "no_such_column": 0.0625,
+        "no_such_table": 0.03125
+      },
+      "zero_var_groups": 0.0,
+      "loss": 0.04444838501513004,
+      "kl": 1.884509019535592e-06,
+      "completion_tokens": 38.65625,
+      "completion_tokens_p95": 50.0,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.125
+      },
+      "gen_s": 39.8,
+      "reward_s": 0.01,
+      "ref_s": 11.8,
+      "train_s": 57.01,
+      "peak_gib": 7.69,
+      "step": 2,
+      "minutes": 5.99
+    },
+    {
+      "reward": 0.5625,
+      "correct": 0.5625,
+      "executed": 0.71875,
+      "executed_wrong": 0.15625,
+      "failures": {
+        "no_such_column": 0.1875,
+        "no_such_table": 0.0625,
+        "syntax": 0.03125
+      },
+      "zero_var_groups": 0.25,
+      "loss": -0.0320723879726757,
+      "kl": 2.7052162949950943e-06,
+      "completion_tokens": 33.03125,
+      "completion_tokens_p95": 62.349999999999994,
+      "truncated": 0.0,
+      "flags": {
+        "added_limit": 0.1875,
+        "empty_result": 0.03125
+      },
+      "gen_s": 24.7,
+      "reward_s": 0.02,
+      "ref_s": 8.38,
+      "train_s": 39.28,
+      "peak_gib": 6.64,
+      "step": 3,
+      "minutes": 7.19
+    },
+    {
+      "reward": 0.78125,
+      "correct": 0.78125,
+      "executed": 0.84375,
+      "executed_wrong": 0.0625,
+      "failures": {
+        "no_such_column": 0.125
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.12677316110229453,
+      "kl": 4.025667848384908e-06,
+      "completion_tokens": 32.4375,
+      "completion_tokens_p95": 85.8,
+      "truncated": 0.03125,
+      "flags": {
+        "empty_result": 0.0625,
+        "truncated": 0.03125
+      },
+      "gen_s": 15.39,
+      "reward_s": 0.01,
+      "ref_s": 3.31,
+      "train_s": 14.4,
+      "peak_gib": 5.35,
+      "step": 4,
+      "minutes": 7.75
+    },
+    {
+      "reward": 0.59375,
+      "correct": 0.59375,
+      "executed": 0.875,
+      "executed_wrong": 0.28125,
+      "failures": {
+        "no_such_column": 0.09375,
+        "other": 0.03125
+      },
+      "zero_var_groups": 0.25,
+      "loss": 0.03748648361536905,
+      "kl": 3.268596453544421e-06,
+      "completion_tokens": 30.46875,
+      "completion_tokens_p95": 61.05,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 23.15,
+      "reward_s": 0.01,
+      "ref_s": 8.69,
+      "train_s": 40.45,
+      "peak_gib": 6.65,
+      "step": 5,
+      "minutes": 8.95
+    },
+    {
+      "reward": 0.84375,
+      "correct": 0.84375,
+      "executed": 0.84375,
+      "executed_wrong": 0.0,
+      "failures": {
+        "no_such_column": 0.125,
+        "no_such_table": 0.03125
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.020163321404416484,
+      "kl": 7.069562941863334e-06,
+      "completion_tokens": 37.90625,
+      "completion_tokens_p95": 57.9,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 14.86,
+      "reward_s": 0.01,
+      "ref_s": 5.47,
+      "train_s": 25.92,
+      "peak_gib": 7.21,
+      "step": 6,
+      "minutes": 9.73
+    },
+    {
+      "reward": 0.75,
+      "correct": 0.75,
+      "executed": 0.8125,
+      "executed_wrong": 0.0625,
+      "failures": {
+        "no_such_column": 0.15625,
+        "no_such_table": 0.03125
+      },
+      "zero_var_groups": 0.25,
+      "loss": -0.04297645653390081,
+      "kl": 2.242479303653742e-05,
+      "completion_tokens": 28.8125,
+      "completion_tokens_p95": 46.0,
+      "truncated": 0.0,
+      "flags": {
+        "select_star": 0.03125
+      },
+      "gen_s": 35.92,
+      "reward_s": 0.01,
+      "ref_s": 12.19,
+      "train_s": 58.6,
+      "peak_gib": 7.36,
+      "step": 7,
+      "minutes": 11.51
+    },
+    {
+      "reward": 0.5,
+      "correct": 0.5,
+      "executed": 0.84375,
+      "executed_wrong": 0.34375,
+      "failures": {
+        "no_such_column": 0.09375,
+        "no_such_table": 0.03125,
+        "syntax": 0.03125
+      },
+      "zero_var_groups": 0.25,
+      "loss": 0.02288380764825959,
+      "kl": 1.0426371915122122e-05,
+      "completion_tokens": 34.8125,
+      "completion_tokens_p95": 55.45,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.125
+      },
+      "gen_s": 31.42,
+      "reward_s": 0.01,
+      "ref_s": 8.96,
+      "train_s": 42.03,
+      "peak_gib": 5.82,
+      "step": 8,
+      "minutes": 12.88
+    },
+    {
+      "reward": 0.65625,
+      "correct": 0.65625,
+      "executed": 0.75,
+      "executed_wrong": 0.09375,
+      "failures": {
+        "no_such_column": 0.15625,
+        "no_such_table": 0.0625,
+        "other": 0.03125
+      },
+      "zero_var_groups": 0.0,
+      "loss": 0.023434204049408436,
+      "kl": 1.892354865532137e-05,
+      "completion_tokens": 44.25,
+      "completion_tokens_p95": 78.99999999999999,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.03125
+      },
+      "gen_s": 30.08,
+      "reward_s": 0.01,
+      "ref_s": 8.95,
+      "train_s": 42.59,
+      "peak_gib": 6.64,
+      "step": 9,
+      "minutes": 14.24
+    },
+    {
+      "reward": 0.75,
+      "correct": 0.75,
+      "executed": 0.875,
+      "executed_wrong": 0.125,
+      "failures": {
+        "no_such_column": 0.125
+      },
+      "zero_var_groups": 0.25,
+      "loss": 0.04632750327883983,
+      "kl": 1.445174324330401e-05,
+      "completion_tokens": 34.78125,
+      "completion_tokens_p95": 68.9,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 26.02,
+      "reward_s": 0.01,
+      "ref_s": 8.68,
+      "train_s": 39.56,
+      "peak_gib": 6.52,
+      "step": 10,
+      "minutes": 15.48
+    },
+    {
+      "reward": 0.875,
+      "correct": 0.875,
+      "executed": 0.90625,
+      "executed_wrong": 0.03125,
+      "failures": {
+        "no_such_column": 0.03125,
+        "other": 0.03125,
+        "syntax": 0.03125
+      },
+      "zero_var_groups": 0.75,
+      "loss": -0.039618940660708354,
+      "kl": 8.696095371024037e-06,
+      "completion_tokens": 26.8125,
+      "completion_tokens_p95": 56.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 31.05,
+      "reward_s": 0.02,
+      "ref_s": 10.43,
+      "train_s": 49.7,
+      "peak_gib": 6.54,
+      "step": 11,
+      "minutes": 17.0
+    },
+    {
+      "reward": 0.78125,
+      "correct": 0.78125,
+      "executed": 0.9375,
+      "executed_wrong": 0.15625,
+      "failures": {
+        "no_such_column": 0.0625
+      },
+      "zero_var_groups": 0.25,
+      "loss": 0.2072896515974929,
+      "kl": 2.9512654955142012e-05,
+      "completion_tokens": 26.75,
+      "completion_tokens_p95": 54.44999999999999,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 23.99,
+      "reward_s": 0.01,
+      "ref_s": 8.09,
+      "train_s": 36.97,
+      "peak_gib": 6.25,
+      "step": 12,
+      "minutes": 18.15
+    },
+    {
+      "reward": 0.75,
+      "correct": 0.75,
+      "executed": 0.875,
+      "executed_wrong": 0.125,
+      "failures": {
+        "no_such_column": 0.0625,
+        "syntax": 0.0625
+      },
+      "zero_var_groups": 0.0,
+      "loss": 0.1085828272625804,
+      "kl": 3.759644882023683e-05,
+      "completion_tokens": 26.71875,
+      "completion_tokens_p95": 49.49999999999999,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.03125
+      },
+      "gen_s": 36.48,
+      "reward_s": 0.01,
+      "ref_s": 12.73,
+      "train_s": 59.64,
+      "peak_gib": 7.34,
+      "step": 13,
+      "minutes": 19.97
+    },
+    {
+      "reward": 0.625,
+      "correct": 0.625,
+      "executed": 0.90625,
+      "executed_wrong": 0.28125,
+      "failures": {
+        "no_such_column": 0.09375
+      },
+      "zero_var_groups": 0.75,
+      "loss": 0.03637483020975256,
+      "kl": 2.945284107324531e-05,
+      "completion_tokens": 31.78125,
+      "completion_tokens_p95": 63.25,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 22.53,
+      "reward_s": 0.01,
+      "ref_s": 8.77,
+      "train_s": 40.78,
+      "peak_gib": 6.64,
+      "step": 14,
+      "minutes": 21.17
+    },
+    {
+      "reward": 0.78125,
+      "correct": 0.78125,
+      "executed": 0.8125,
+      "executed_wrong": 0.03125,
+      "failures": {
+        "no_such_column": 0.125,
+        "no_such_table": 0.03125,
+        "syntax": 0.03125
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.034714998046330756,
+      "kl": 4.449100836576798e-05,
+      "completion_tokens": 40.0625,
+      "completion_tokens_p95": 61.45,
+      "truncated": 0.0,
+      "flags": {
+        "added_limit": 0.0625
+      },
+      "gen_s": 34.17,
+      "reward_s": 0.01,
+      "ref_s": 9.88,
+      "train_s": 45.51,
+      "peak_gib": 5.98,
+      "step": 15,
+      "minutes": 22.67
+    },
+    {
+      "reward": 0.75,
+      "correct": 0.75,
+      "executed": 0.75,
+      "executed_wrong": 0.0,
+      "failures": {
+        "no_such_column": 0.25
+      },
+      "zero_var_groups": 1.0,
+      "loss": 6.79702964412332e-07,
+      "kl": 3.398515014763338e-05,
+      "completion_tokens": 20.75,
+      "completion_tokens_p95": 31.29999999999999,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 12.04,
+      "reward_s": 0.01,
+      "ref_s": 4.25,
+      "train_s": 18.64,
+      "peak_gib": 6.38,
+      "step": 16,
+      "minutes": 23.25
+    },
+    {
+      "reward": 0.5,
+      "correct": 0.5,
+      "executed": 0.71875,
+      "executed_wrong": 0.21875,
+      "failures": {
+        "guard": 0.03125,
+        "no_such_column": 0.15625,
+        "other": 0.03125,
+        "syntax": 0.0625
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.014039906888105413,
+      "kl": 4.625459357715738e-05,
+      "completion_tokens": 56.3125,
+      "completion_tokens_p95": 100.29999999999998,
+      "truncated": 0.0,
+      "flags": {
+        "added_limit": 0.125,
+        "empty_result": 0.03125,
+        "guard_refused": 0.03125
+      },
+      "gen_s": 15.59,
+      "reward_s": 0.01,
+      "ref_s": 4.26,
+      "train_s": 18.52,
+      "peak_gib": 6.01,
+      "step": 17,
+      "minutes": 23.89
+    },
+    {
+      "reward": 0.875,
+      "correct": 0.875,
+      "executed": 0.9375,
+      "executed_wrong": 0.0625,
+      "failures": {
+        "no_such_column": 0.03125,
+        "syntax": 0.03125
+      },
+      "zero_var_groups": 0.25,
+      "loss": -0.012024005970036944,
+      "kl": 3.4894381970227124e-05,
+      "completion_tokens": 31.0625,
+      "completion_tokens_p95": 57.25,
+      "truncated": 0.0,
+      "flags": {
+        "select_star": 0.03125
+      },
+      "gen_s": 29.9,
+      "reward_s": 0.01,
+      "ref_s": 9.13,
+      "train_s": 43.15,
+      "peak_gib": 5.97,
+      "step": 18,
+      "minutes": 25.26
+    },
+    {
+      "reward": 0.59375,
+      "correct": 0.59375,
+      "executed": 0.78125,
+      "executed_wrong": 0.1875,
+      "failures": {
+        "no_such_column": 0.125,
+        "no_such_table": 0.09375
+      },
+      "zero_var_groups": 0.0,
+      "loss": 0.006088772788643837,
+      "kl": 6.000845486881169e-05,
+      "completion_tokens": 49.125,
+      "completion_tokens_p95": 75.6,
+      "truncated": 0.0,
+      "flags": {
+        "row_flood": 0.03125
+      },
+      "gen_s": 42.4,
+      "reward_s": 0.01,
+      "ref_s": 10.99,
+      "train_s": 51.54,
+      "peak_gib": 6.56,
+      "step": 19,
+      "minutes": 27.01
+    },
+    {
+      "reward": 0.9375,
+      "correct": 0.9375,
+      "executed": 0.9375,
+      "executed_wrong": 0.0,
+      "failures": {
+        "no_such_column": 0.0625
+      },
+      "zero_var_groups": 0.75,
+      "loss": 0.004639392090021163,
+      "kl": 2.263703658304313e-05,
+      "completion_tokens": 27.21875,
+      "completion_tokens_p95": 38.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 18.39,
+      "reward_s": 0.01,
+      "ref_s": 8.07,
+      "train_s": 35.74,
+      "peak_gib": 6.25,
+      "step": 20,
+      "minutes": 28.05
+    },
+    {
+      "reward": 0.9375,
+      "correct": 0.9375,
+      "executed": 0.96875,
+      "executed_wrong": 0.03125,
+      "failures": {
+        "no_such_table": 0.03125
+      },
+      "zero_var_groups": 0.75,
+      "loss": 0.04042261008034709,
+      "kl": 6.299225890001996e-05,
+      "completion_tokens": 33.46875,
+      "completion_tokens_p95": 46.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 38.52,
+      "reward_s": 0.01,
+      "ref_s": 12.43,
+      "train_s": 56.91,
+      "peak_gib": 7.13,
+      "step": 21,
+      "minutes": 29.85
+    },
+    {
+      "reward": 0.5625,
+      "correct": 0.5625,
+      "executed": 0.65625,
+      "executed_wrong": 0.09375,
+      "failures": {
+        "no_such_column": 0.1875,
+        "no_such_table": 0.0625,
+        "syntax": 0.09375
+      },
+      "zero_var_groups": 0.0,
+      "loss": -0.11289208708330989,
+      "kl": 0.00017599705591833507,
+      "completion_tokens": 39.15625,
+      "completion_tokens_p95": 61.45,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 15.18,
+      "reward_s": 0.01,
+      "ref_s": 5.31,
+      "train_s": 24.43,
+      "peak_gib": 7.07,
+      "step": 22,
+      "minutes": 30.6
+    },
+    {
+      "reward": 0.625,
+      "correct": 0.625,
+      "executed": 0.9375,
+      "executed_wrong": 0.3125,
+      "failures": {
+        "no_such_table": 0.0625
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.03239428029717703,
+      "kl": 7.529364186375428e-05,
+      "completion_tokens": 36.03125,
+      "completion_tokens_p95": 60.599999999999994,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 40.69,
+      "reward_s": 0.01,
+      "ref_s": 11.25,
+      "train_s": 51.6,
+      "peak_gib": 6.56,
+      "step": 23,
+      "minutes": 32.33
+    },
+    {
+      "reward": 0.84375,
+      "correct": 0.84375,
+      "executed": 0.875,
+      "executed_wrong": 0.03125,
+      "failures": {
+        "no_such_column": 0.0625,
+        "other": 0.03125,
+        "syntax": 0.03125
+      },
+      "zero_var_groups": 0.25,
+      "loss": 0.05268070405664105,
+      "kl": 0.0001435092779306265,
+      "completion_tokens": 30.46875,
+      "completion_tokens_p95": 51.45,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 35.69,
+      "reward_s": 0.02,
+      "ref_s": 10.5,
+      "train_s": 49.42,
+      "peak_gib": 6.54,
+      "step": 24,
+      "minutes": 33.92
+    },
+    {
+      "reward": 0.5,
+      "correct": 0.5,
+      "executed": 0.53125,
+      "executed_wrong": 0.03125,
+      "failures": {
+        "no_such_column": 0.3125,
+        "no_such_table": 0.03125,
+        "other": 0.03125,
+        "syntax": 0.09375
+      },
+      "zero_var_groups": 0.0,
+      "loss": -0.050182681530714035,
+      "kl": 0.0003765720807702665,
+      "completion_tokens": 40.34375,
+      "completion_tokens_p95": 61.8,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 12.55,
+      "reward_s": 0.01,
+      "ref_s": 4.2,
+      "train_s": 18.61,
+      "peak_gib": 6.17,
+      "step": 25,
+      "minutes": 34.51
+    },
+    {
+      "reward": 0.40625,
+      "correct": 0.40625,
+      "executed": 0.65625,
+      "executed_wrong": 0.25,
+      "failures": {
+        "no_such_column": 0.3125,
+        "other": 0.03125
+      },
+      "zero_var_groups": 0.25,
+      "loss": -0.12275691843690206,
+      "kl": 0.00011029629146351534,
+      "completion_tokens": 42.5,
+      "completion_tokens_p95": 70.1,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.03125
+      },
+      "gen_s": 23.65,
+      "reward_s": 0.02,
+      "ref_s": 6.61,
+      "train_s": 30.13,
+      "peak_gib": 6.93,
+      "step": 26,
+      "minutes": 35.52
+    },
+    {
+      "reward": 0.53125,
+      "correct": 0.53125,
+      "executed": 0.75,
+      "executed_wrong": 0.21875,
+      "failures": {
+        "no_such_column": 0.1875,
+        "no_such_table": 0.0625
+      },
+      "zero_var_groups": 0.25,
+      "loss": -0.005035822213983465,
+      "kl": 0.00013743532623892044,
+      "completion_tokens": 38.875,
+      "completion_tokens_p95": 64.14999999999999,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.09375
+      },
+      "gen_s": 26.52,
+      "reward_s": 0.01,
+      "ref_s": 9.4,
+      "train_s": 43.97,
+      "peak_gib": 6.62,
+      "step": 27,
+      "minutes": 36.85
+    },
+    {
+      "reward": 0.9375,
+      "correct": 0.9375,
+      "executed": 0.96875,
+      "executed_wrong": 0.03125,
+      "failures": {
+        "no_such_column": 0.03125
+      },
+      "zero_var_groups": 0.75,
+      "loss": -0.03896333310783051,
+      "kl": 0.00010574914225178943,
+      "completion_tokens": 27.3125,
+      "completion_tokens_p95": 65.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 20.53,
+      "reward_s": 0.01,
+      "ref_s": 7.9,
+      "train_s": 35.74,
+      "peak_gib": 6.19,
+      "step": 28,
+      "minutes": 37.92
+    },
+    {
+      "reward": 0.71875,
+      "correct": 0.71875,
+      "executed": 0.84375,
+      "executed_wrong": 0.125,
+      "failures": {
+        "no_such_column": 0.125,
+        "syntax": 0.03125
+      },
+      "zero_var_groups": 0.75,
+      "loss": 1.982927713584104e-06,
+      "kl": 9.951607206671477e-05,
+      "completion_tokens": 33.1875,
+      "completion_tokens_p95": 78.35,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 18.32,
+      "reward_s": 0.01,
+      "ref_s": 5.54,
+      "train_s": 25.73,
+      "peak_gib": 7.54,
+      "step": 29,
+      "minutes": 38.75
+    },
+    {
+      "reward": 0.71875,
+      "correct": 0.71875,
+      "executed": 0.8125,
+      "executed_wrong": 0.09375,
+      "failures": {
+        "no_such_column": 0.1875
+      },
+      "zero_var_groups": 0.25,
+      "loss": -0.0446962146554738,
+      "kl": 0.00011025252351341467,
+      "completion_tokens": 32.6875,
+      "completion_tokens_p95": 55.45,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.03125
+      },
+      "gen_s": 19.09,
+      "reward_s": 0.01,
+      "ref_s": 7.01,
+      "train_s": 32.76,
+      "peak_gib": 6.07,
+      "step": 30,
+      "minutes": 39.73
+    },
+    {
+      "reward": 0.75,
+      "correct": 0.75,
+      "executed": 0.90625,
+      "executed_wrong": 0.15625,
+      "failures": {
+        "no_such_table": 0.0625,
+        "other": 0.03125
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.022718770706377178,
+      "kl": 9.816896915435791e-05,
+      "completion_tokens": 31.25,
+      "completion_tokens_p95": 59.599999999999994,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 20.63,
+      "reward_s": 0.01,
+      "ref_s": 6.52,
+      "train_s": 30.04,
+      "peak_gib": 7.05,
+      "step": 31,
+      "minutes": 40.69
+    },
+    {
+      "reward": 0.3125,
+      "correct": 0.3125,
+      "executed": 0.5625,
+      "executed_wrong": 0.25,
+      "failures": {
+        "no_such_column": 0.34375,
+        "no_such_table": 0.09375
+      },
+      "zero_var_groups": 0.25,
+      "loss": -0.02330418360747899,
+      "kl": 0.00023948380754942173,
+      "completion_tokens": 35.28125,
+      "completion_tokens_p95": 68.45,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.03125,
+        "row_flood": 0.03125
+      },
+      "gen_s": 26.62,
+      "reward_s": 0.01,
+      "ref_s": 9.24,
+      "train_s": 43.26,
+      "peak_gib": 6.66,
+      "step": 32,
+      "minutes": 42.01
+    },
+    {
+      "reward": 0.6875,
+      "correct": 0.6875,
+      "executed": 0.90625,
+      "executed_wrong": 0.21875,
+      "failures": {
+        "no_such_column": 0.0625,
+        "other": 0.03125
+      },
+      "zero_var_groups": 0.25,
+      "loss": -0.06377133625563014,
+      "kl": 0.0001304345588161521,
+      "completion_tokens": 34.21875,
+      "completion_tokens_p95": 54.45,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.125
+      },
+      "gen_s": 10.99,
+      "reward_s": 0.01,
+      "ref_s": 4.1,
+      "train_s": 17.82,
+      "peak_gib": 6.09,
+      "step": 33,
+      "minutes": 42.56
+    },
+    {
+      "reward": 0.90625,
+      "correct": 0.90625,
+      "executed": 0.9375,
+      "executed_wrong": 0.03125,
+      "failures": {
+        "no_such_column": 0.0625
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.04872041569384533,
+      "kl": 9.267896163363417e-05,
+      "completion_tokens": 22.3125,
+      "completion_tokens_p95": 35.9,
+      "truncated": 0.0,
+      "flags": {
+        "added_limit": 0.125
+      },
+      "gen_s": 9.03,
+      "reward_s": 0.01,
+      "ref_s": 3.35,
+      "train_s": 15.04,
+      "peak_gib": 5.97,
+      "step": 34,
+      "minutes": 43.02
+    },
+    {
+      "reward": 0.90625,
+      "correct": 0.90625,
+      "executed": 0.90625,
+      "executed_wrong": 0.0,
+      "failures": {
+        "no_such_column": 0.09375
+      },
+      "zero_var_groups": 0.75,
+      "loss": -0.006800948995861478,
+      "kl": 8.921724086660949e-05,
+      "completion_tokens": 22.53125,
+      "completion_tokens_p95": 39.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 30.91,
+      "reward_s": 0.01,
+      "ref_s": 12.29,
+      "train_s": 56.49,
+      "peak_gib": 7.34,
+      "step": 35,
+      "minutes": 44.68
+    },
+    {
+      "reward": 0.5625,
+      "correct": 0.5625,
+      "executed": 0.8125,
+      "executed_wrong": 0.25,
+      "failures": {
+        "no_such_column": 0.09375,
+        "no_such_table": 0.0625,
+        "other": 0.03125
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.05050298721755464,
+      "kl": 0.0001397641097636348,
+      "completion_tokens": 48.78125,
+      "completion_tokens_p95": 97.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 40.26,
+      "reward_s": 0.01,
+      "ref_s": 11.1,
+      "train_s": 51.43,
+      "peak_gib": 6.54,
+      "step": 36,
+      "minutes": 46.39
+    },
+    {
+      "reward": 0.71875,
+      "correct": 0.71875,
+      "executed": 1.0,
+      "executed_wrong": 0.28125,
+      "failures": {},
+      "zero_var_groups": 0.75,
+      "loss": 0.0967683095902363,
+      "kl": 9.028386415504828e-05,
+      "completion_tokens": 20.5,
+      "completion_tokens_p95": 21.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 28.64,
+      "reward_s": 0.01,
+      "ref_s": 10.82,
+      "train_s": 49.33,
+      "peak_gib": 6.52,
+      "step": 37,
+      "minutes": 47.87
+    },
+    {
+      "reward": 0.875,
+      "correct": 0.875,
+      "executed": 1.0,
+      "executed_wrong": 0.125,
+      "failures": {},
+      "zero_var_groups": 0.75,
+      "loss": 1.211849540466714e-06,
+      "kl": 6.0993550198801446e-05,
+      "completion_tokens": 22.25,
+      "completion_tokens_p95": 35.0,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.125
+      },
+      "gen_s": 27.03,
+      "reward_s": 0.01,
+      "ref_s": 10.57,
+      "train_s": 48.53,
+      "peak_gib": 6.52,
+      "step": 38,
+      "minutes": 49.31
+    },
+    {
+      "reward": 0.5,
+      "correct": 0.5,
+      "executed": 0.8125,
+      "executed_wrong": 0.3125,
+      "failures": {
+        "no_such_column": 0.125,
+        "no_such_table": 0.03125,
+        "syntax": 0.03125
+      },
+      "zero_var_groups": 1.0,
+      "loss": 5.665350803596425e-06,
+      "kl": 0.00028326754262690237,
+      "completion_tokens": 30.0625,
+      "completion_tokens_p95": 45.9,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.03125
+      },
+      "gen_s": 32.53,
+      "reward_s": 0.01,
+      "ref_s": 10.66,
+      "train_s": 48.82,
+      "peak_gib": 6.56,
+      "step": 39,
+      "minutes": 50.85
+    },
+    {
+      "reward": 0.71875,
+      "correct": 0.71875,
+      "executed": 0.9375,
+      "executed_wrong": 0.21875,
+      "failures": {
+        "no_such_table": 0.0625
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.06133858701935822,
+      "kl": 0.00024646998755803624,
+      "completion_tokens": 34.28125,
+      "completion_tokens_p95": 74.74999999999999,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.125
+      },
+      "gen_s": 39.67,
+      "reward_s": 0.01,
+      "ref_s": 11.2,
+      "train_s": 51.74,
+      "peak_gib": 6.56,
+      "step": 40,
+      "minutes": 52.56
+    },
+    {
+      "reward": 0.90625,
+      "correct": 0.90625,
+      "executed": 0.90625,
+      "executed_wrong": 0.0,
+      "failures": {
+        "no_such_column": 0.0625,
+        "no_such_table": 0.03125
+      },
+      "zero_var_groups": 0.75,
+      "loss": 0.06607874273164072,
+      "kl": 0.0001663942784307871,
+      "completion_tokens": 19.65625,
+      "completion_tokens_p95": 24.699999999999996,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 9.69,
+      "reward_s": 0.01,
+      "ref_s": 3.88,
+      "train_s": 16.94,
+      "peak_gib": 6.17,
+      "step": 41,
+      "minutes": 53.07
+    },
+    {
+      "reward": 0.65625,
+      "correct": 0.65625,
+      "executed": 0.84375,
+      "executed_wrong": 0.1875,
+      "failures": {
+        "no_such_column": 0.125
+      },
+      "zero_var_groups": 0.25,
+      "loss": 0.0645566487577014,
+      "kl": 0.00022891943699845645,
+      "completion_tokens": 46.8125,
+      "completion_tokens_p95": 115.0,
+      "truncated": 0.03125,
+      "flags": {
+        "added_limit": 0.03125,
+        "empty_result": 0.125,
+        "truncated": 0.03125
+      },
+      "gen_s": 32.39,
+      "reward_s": 0.01,
+      "ref_s": 9.07,
+      "train_s": 41.98,
+      "peak_gib": 6.46,
+      "step": 42,
+      "minutes": 54.46
+    },
+    {
+      "reward": 0.8125,
+      "correct": 0.8125,
+      "executed": 0.84375,
+      "executed_wrong": 0.03125,
+      "failures": {
+        "no_such_column": 0.09375,
+        "no_such_table": 0.03125,
+        "syntax": 0.03125
+      },
+      "zero_var_groups": 0.25,
+      "loss": 0.0934024175801218,
+      "kl": 0.00030473454320458036,
+      "completion_tokens": 27.3125,
+      "completion_tokens_p95": 51.14999999999999,
+      "truncated": 0.0,
+      "flags": {
+        "select_star": 0.03125
+      },
+      "gen_s": 24.49,
+      "reward_s": 0.01,
+      "ref_s": 8.92,
+      "train_s": 42.15,
+      "peak_gib": 6.64,
+      "step": 43,
+      "minutes": 55.72
+    },
+    {
+      "reward": 0.875,
+      "correct": 0.875,
+      "executed": 0.90625,
+      "executed_wrong": 0.03125,
+      "failures": {
+        "no_such_column": 0.09375
+      },
+      "zero_var_groups": 0.75,
+      "loss": -0.03826020718588374,
+      "kl": 0.0002478465832718689,
+      "completion_tokens": 31.84375,
+      "completion_tokens_p95": 61.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 22.37,
+      "reward_s": 0.01,
+      "ref_s": 8.13,
+      "train_s": 37.67,
+      "peak_gib": 6.41,
+      "step": 44,
+      "minutes": 56.86
+    },
+    {
+      "reward": 0.8125,
+      "correct": 0.8125,
+      "executed": 0.90625,
+      "executed_wrong": 0.09375,
+      "failures": {
+        "no_such_column": 0.09375
+      },
+      "zero_var_groups": 0.0,
+      "loss": 0.1186362961307168,
+      "kl": 0.000498282530310996,
+      "completion_tokens": 46.1875,
+      "completion_tokens_p95": 95.89999999999998,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.0625
+      },
+      "gen_s": 18.1,
+      "reward_s": 0.01,
+      "ref_s": 4.97,
+      "train_s": 22.74,
+      "peak_gib": 6.76,
+      "step": 45,
+      "minutes": 57.62
+    },
+    {
+      "reward": 0.40625,
+      "correct": 0.40625,
+      "executed": 0.875,
+      "executed_wrong": 0.46875,
+      "failures": {
+        "no_such_column": 0.09375,
+        "no_such_table": 0.03125
+      },
+      "zero_var_groups": 0.5,
+      "loss": -0.003084341926907541,
+      "kl": 0.00022110841517665437,
+      "completion_tokens": 50.8125,
+      "completion_tokens_p95": 73.35,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.15625
+      },
+      "gen_s": 44.03,
+      "reward_s": 0.01,
+      "ref_s": 10.85,
+      "train_s": 50.87,
+      "peak_gib": 6.54,
+      "step": 46,
+      "minutes": 59.39
+    },
+    {
+      "reward": 0.65625,
+      "correct": 0.65625,
+      "executed": 0.84375,
+      "executed_wrong": 0.1875,
+      "failures": {
+        "no_such_column": 0.125,
+        "no_such_table": 0.03125
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.013229276434945092,
+      "kl": 0.00028470358806784683,
+      "completion_tokens": 32.09375,
+      "completion_tokens_p95": 56.849999999999994,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 38.06,
+      "reward_s": 0.01,
+      "ref_s": 12.13,
+      "train_s": 56.64,
+      "peak_gib": 7.16,
+      "step": 47,
+      "minutes": 61.17
+    },
+    {
+      "reward": 0.53125,
+      "correct": 0.53125,
+      "executed": 0.78125,
+      "executed_wrong": 0.25,
+      "failures": {
+        "no_such_column": 0.1875,
+        "syntax": 0.03125
+      },
+      "zero_var_groups": 0.75,
+      "loss": -0.004019912107724011,
+      "kl": 0.00034544814119965737,
+      "completion_tokens": 35.1875,
+      "completion_tokens_p95": 66.9,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.0625,
+        "select_star": 0.03125
+      },
+      "gen_s": 31.21,
+      "reward_s": 0.01,
+      "ref_s": 10.12,
+      "train_s": 45.85,
+      "peak_gib": 5.97,
+      "step": 48,
+      "minutes": 62.62
+    },
+    {
+      "reward": 0.5,
+      "correct": 0.5,
+      "executed": 0.875,
+      "executed_wrong": 0.375,
+      "failures": {
+        "no_such_column": 0.125
+      },
+      "zero_var_groups": 1.0,
+      "loss": 3.965829846741542e-06,
+      "kl": 0.00019829149540949605,
+      "completion_tokens": 28.3125,
+      "completion_tokens_p95": 57.0,
+      "truncated": 0.0,
+      "flags": {
+        "row_flood": 0.1875
+      },
+      "gen_s": 28.83,
+      "reward_s": 0.01,
+      "ref_s": 10.34,
+      "train_s": 48.93,
+      "peak_gib": 6.54,
+      "step": 49,
+      "minutes": 64.09
+    },
+    {
+      "reward": 0.5625,
+      "correct": 0.5625,
+      "executed": 0.78125,
+      "executed_wrong": 0.21875,
+      "failures": {
+        "no_such_column": 0.1875
+      },
+      "zero_var_groups": 0.75,
+      "loss": -0.025969077449460087,
+      "kl": 0.0002842535451054573,
+      "completion_tokens": 50.0,
+      "completion_tokens_p95": 119.05,
+      "truncated": 0.03125,
+      "flags": {
+        "added_limit": 0.125,
+        "empty_result": 0.09375,
+        "truncated": 0.03125
+      },
+      "gen_s": 14.68,
+      "reward_s": 0.01,
+      "ref_s": 3.47,
+      "train_s": 15.17,
+      "peak_gib": 5.35,
+      "step": 50,
+      "minutes": 64.65,
+      "val_ex": 0.71
+    },
+    {
+      "reward": 0.8125,
+      "correct": 0.8125,
+      "executed": 0.96875,
+      "executed_wrong": 0.15625,
+      "failures": {
+        "no_sql": 0.03125
+      },
+      "zero_var_groups": 0.25,
+      "loss": -0.07784315549194759,
+      "kl": 0.0003110557285464233,
+      "completion_tokens": 23.78125,
+      "completion_tokens_p95": 45.0,
+      "truncated": 0.0,
+      "flags": {
+        "no_sql": 0.03125
+      },
+      "gen_s": 16.11,
+      "reward_s": 0.01,
+      "ref_s": 7.27,
+      "train_s": 32.34,
+      "peak_gib": 7.07,
+      "step": 51,
+      "minutes": 68.65
+    },
+    {
+      "reward": 0.9375,
+      "correct": 0.9375,
+      "executed": 1.0,
+      "executed_wrong": 0.0625,
+      "failures": {},
+      "zero_var_groups": 0.75,
+      "loss": -0.041604848889197826,
+      "kl": 0.0001592864996483879,
+      "completion_tokens": 23.84375,
+      "completion_tokens_p95": 47.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 13.15,
+      "reward_s": 0.01,
+      "ref_s": 4.93,
+      "train_s": 21.83,
+      "peak_gib": 7.03,
+      "step": 52,
+      "minutes": 69.32
+    },
+    {
+      "reward": 0.6875,
+      "correct": 0.6875,
+      "executed": 0.9375,
+      "executed_wrong": 0.25,
+      "failures": {
+        "no_such_column": 0.0625
+      },
+      "zero_var_groups": 0.5,
+      "loss": -0.012279035087715329,
+      "kl": 0.000581668766014638,
+      "completion_tokens": 33.625,
+      "completion_tokens_p95": 55.699999999999996,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.125
+      },
+      "gen_s": 26.37,
+      "reward_s": 0.01,
+      "ref_s": 8.54,
+      "train_s": 39.54,
+      "peak_gib": 6.46,
+      "step": 53,
+      "minutes": 70.56
+    },
+    {
+      "reward": 0.90625,
+      "correct": 0.90625,
+      "executed": 0.9375,
+      "executed_wrong": 0.03125,
+      "failures": {
+        "no_such_table": 0.0625
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.02111208231197992,
+      "kl": 0.0001693932738687311,
+      "completion_tokens": 28.0,
+      "completion_tokens_p95": 54.45,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 20.11,
+      "reward_s": 0.01,
+      "ref_s": 7.87,
+      "train_s": 36.08,
+      "peak_gib": 6.13,
+      "step": 54,
+      "minutes": 71.63
+    },
+    {
+      "reward": 0.5625,
+      "correct": 0.5625,
+      "executed": 0.6875,
+      "executed_wrong": 0.125,
+      "failures": {
+        "no_such_column": 0.21875,
+        "syntax": 0.09375
+      },
+      "zero_var_groups": 0.75,
+      "loss": -0.046184903535959165,
+      "kl": 0.0004124610433826368,
+      "completion_tokens": 45.6875,
+      "completion_tokens_p95": 72.35,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 37.77,
+      "reward_s": 0.01,
+      "ref_s": 10.93,
+      "train_s": 50.68,
+      "peak_gib": 6.56,
+      "step": 55,
+      "minutes": 73.29
+    },
+    {
+      "reward": 0.84375,
+      "correct": 0.84375,
+      "executed": 0.9375,
+      "executed_wrong": 0.09375,
+      "failures": {
+        "no_such_column": 0.0625
+      },
+      "zero_var_groups": 0.25,
+      "loss": -0.02027112523619934,
+      "kl": 0.004462921219948528,
+      "completion_tokens": 17.71875,
+      "completion_tokens_p95": 19.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 14.71,
+      "reward_s": 0.01,
+      "ref_s": 6.49,
+      "train_s": 29.89,
+      "peak_gib": 7.22,
+      "step": 56,
+      "minutes": 74.14
+    },
+    {
+      "reward": 0.46875,
+      "correct": 0.46875,
+      "executed": 0.8125,
+      "executed_wrong": 0.34375,
+      "failures": {
+        "no_such_column": 0.15625,
+        "other": 0.03125
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.017033347625734052,
+      "kl": 0.0005549682764883939,
+      "completion_tokens": 37.53125,
+      "completion_tokens_p95": 72.9,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.09375
+      },
+      "gen_s": 25.56,
+      "reward_s": 0.02,
+      "ref_s": 8.46,
+      "train_s": 38.96,
+      "peak_gib": 6.5,
+      "step": 57,
+      "minutes": 75.36
+    },
+    {
+      "reward": 0.59375,
+      "correct": 0.59375,
+      "executed": 0.75,
+      "executed_wrong": 0.15625,
+      "failures": {
+        "guard": 0.03125,
+        "no_such_column": 0.21875
+      },
+      "zero_var_groups": 0.5,
+      "loss": -0.0039495858368656656,
+      "kl": 0.0006823235120468702,
+      "completion_tokens": 25.4375,
+      "completion_tokens_p95": 47.49999999999999,
+      "truncated": 0.0,
+      "flags": {
+        "guard_refused": 0.03125
+      },
+      "gen_s": 12.48,
+      "reward_s": 0.01,
+      "ref_s": 4.5,
+      "train_s": 20.67,
+      "peak_gib": 6.64,
+      "step": 58,
+      "minutes": 75.98
+    },
+    {
+      "reward": 0.59375,
+      "correct": 0.59375,
+      "executed": 0.90625,
+      "executed_wrong": 0.3125,
+      "failures": {
+        "no_such_column": 0.09375
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.05771349507904411,
+      "kl": 0.0004743790515115328,
+      "completion_tokens": 33.4375,
+      "completion_tokens_p95": 72.35,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 40.29,
+      "reward_s": 0.01,
+      "ref_s": 12.56,
+      "train_s": 61.19,
+      "peak_gib": 7.67,
+      "step": 59,
+      "minutes": 77.89
+    },
+    {
+      "reward": 0.75,
+      "correct": 0.75,
+      "executed": 0.9375,
+      "executed_wrong": 0.1875,
+      "failures": {
+        "no_such_column": 0.0625
+      },
+      "zero_var_groups": 1.0,
+      "loss": 6.415291299077808e-06,
+      "kl": 0.0003207645245960781,
+      "completion_tokens": 26.25,
+      "completion_tokens_p95": 47.9,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 30.11,
+      "reward_s": 0.01,
+      "ref_s": 10.88,
+      "train_s": 49.93,
+      "peak_gib": 6.58,
+      "step": 60,
+      "minutes": 79.4
+    },
+    {
+      "reward": 0.90625,
+      "correct": 0.90625,
+      "executed": 0.9375,
+      "executed_wrong": 0.03125,
+      "failures": {
+        "no_such_column": 0.0625
+      },
+      "zero_var_groups": 0.75,
+      "loss": 0.07979923914025022,
+      "kl": 0.000702269667340286,
+      "completion_tokens": 27.90625,
+      "completion_tokens_p95": 52.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 13.53,
+      "reward_s": 0.01,
+      "ref_s": 5.02,
+      "train_s": 22.4,
+      "peak_gib": 7.03,
+      "step": 61,
+      "minutes": 80.09
+    },
+    {
+      "reward": 0.6875,
+      "correct": 0.6875,
+      "executed": 0.9375,
+      "executed_wrong": 0.25,
+      "failures": {
+        "no_such_column": 0.03125,
+        "other": 0.03125
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.0930138586081064,
+      "kl": 0.00022868779989389273,
+      "completion_tokens": 20.3125,
+      "completion_tokens_p95": 23.45,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 13.27,
+      "reward_s": 0.01,
+      "ref_s": 5.17,
+      "train_s": 23.2,
+      "peak_gib": 7.18,
+      "step": 62,
+      "minutes": 80.78
+    },
+    {
+      "reward": 0.71875,
+      "correct": 0.71875,
+      "executed": 0.875,
+      "executed_wrong": 0.15625,
+      "failures": {
+        "no_such_column": 0.125
+      },
+      "zero_var_groups": 0.75,
+      "loss": 0.016793938487162846,
+      "kl": 0.0003821153852585875,
+      "completion_tokens": 37.28125,
+      "completion_tokens_p95": 65.9,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 16.67,
+      "reward_s": 0.01,
+      "ref_s": 5.39,
+      "train_s": 23.98,
+      "peak_gib": 7.18,
+      "step": 63,
+      "minutes": 81.55
+    },
+    {
+      "reward": 1.0,
+      "correct": 1.0,
+      "executed": 1.0,
+      "executed_wrong": 0.0,
+      "failures": {},
+      "zero_var_groups": 1.0,
+      "loss": 6.509798296860936e-06,
+      "kl": 0.0003254899089200509,
+      "completion_tokens": 30.15625,
+      "completion_tokens_p95": 47.45,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 32.8,
+      "reward_s": 0.01,
+      "ref_s": 10.47,
+      "train_s": 48.86,
+      "peak_gib": 6.52,
+      "step": 64,
+      "minutes": 83.09
+    },
+    {
+      "reward": 0.75,
+      "correct": 0.75,
+      "executed": 0.84375,
+      "executed_wrong": 0.09375,
+      "failures": {
+        "no_such_column": 0.125,
+        "syntax": 0.03125
+      },
+      "zero_var_groups": 0.25,
+      "loss": 0.03349540824555319,
+      "kl": 0.00036925575055113624,
+      "completion_tokens": 34.0625,
+      "completion_tokens_p95": 57.749999999999986,
+      "truncated": 0.0,
+      "flags": {
+        "select_star": 0.03125
+      },
+      "gen_s": 32.07,
+      "reward_s": 0.01,
+      "ref_s": 9.56,
+      "train_s": 45.54,
+      "peak_gib": 5.97,
+      "step": 65,
+      "minutes": 84.54
+    },
+    {
+      "reward": 0.75,
+      "correct": 0.75,
+      "executed": 0.8125,
+      "executed_wrong": 0.0625,
+      "failures": {
+        "no_such_column": 0.15625,
+        "other": 0.03125
+      },
+      "zero_var_groups": 0.25,
+      "loss": 0.008434689892780511,
+      "kl": 0.000678761289411204,
+      "completion_tokens": 49.84375,
+      "completion_tokens_p95": 78.5,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 27.8,
+      "reward_s": 0.01,
+      "ref_s": 6.55,
+      "train_s": 31.43,
+      "peak_gib": 7.07,
+      "step": 66,
+      "minutes": 85.64
+    },
+    {
+      "reward": 0.90625,
+      "correct": 0.90625,
+      "executed": 0.96875,
+      "executed_wrong": 0.0625,
+      "failures": {
+        "no_such_column": 0.03125
+      },
+      "zero_var_groups": 0.75,
+      "loss": -0.09344287923892064,
+      "kl": 0.00025544037600661447,
+      "completion_tokens": 22.53125,
+      "completion_tokens_p95": 54.9,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 20.38,
+      "reward_s": 0.01,
+      "ref_s": 8.15,
+      "train_s": 38.05,
+      "peak_gib": 6.46,
+      "step": 67,
+      "minutes": 86.75
+    },
+    {
+      "reward": 0.59375,
+      "correct": 0.59375,
+      "executed": 0.78125,
+      "executed_wrong": 0.1875,
+      "failures": {
+        "no_such_column": 0.1875,
+        "syntax": 0.03125
+      },
+      "zero_var_groups": 0.75,
+      "loss": -0.09992949736545143,
+      "kl": 0.00034476334032081595,
+      "completion_tokens": 28.65625,
+      "completion_tokens_p95": 48.8,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 26.25,
+      "reward_s": 0.01,
+      "ref_s": 8.3,
+      "train_s": 39.19,
+      "peak_gib": 6.54,
+      "step": 68,
+      "minutes": 87.98
+    },
+    {
+      "reward": 0.875,
+      "correct": 0.875,
+      "executed": 0.875,
+      "executed_wrong": 0.0,
+      "failures": {
+        "no_such_column": 0.125
+      },
+      "zero_var_groups": 0.75,
+      "loss": 0.0038209227795272527,
+      "kl": 0.00048791786615548624,
+      "completion_tokens": 24.59375,
+      "completion_tokens_p95": 61.39999999999999,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 28.59,
+      "reward_s": 0.01,
+      "ref_s": 10.98,
+      "train_s": 50.48,
+      "peak_gib": 6.52,
+      "step": 69,
+      "minutes": 89.48
+    },
+    {
+      "reward": 0.75,
+      "correct": 0.75,
+      "executed": 0.9375,
+      "executed_wrong": 0.1875,
+      "failures": {
+        "no_such_column": 0.03125,
+        "syntax": 0.03125
+      },
+      "zero_var_groups": 0.25,
+      "loss": -0.0030208302042282753,
+      "kl": 0.0003244585461086697,
+      "completion_tokens": 33.75,
+      "completion_tokens_p95": 57.8,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 25.72,
+      "reward_s": 0.01,
+      "ref_s": 8.69,
+      "train_s": 42.03,
+      "peak_gib": 6.62,
+      "step": 70,
+      "minutes": 90.76
+    },
+    {
+      "reward": 0.6875,
+      "correct": 0.6875,
+      "executed": 0.8125,
+      "executed_wrong": 0.125,
+      "failures": {
+        "no_such_column": 0.09375,
+        "no_such_table": 0.03125,
+        "other": 0.03125,
+        "syntax": 0.03125
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.005130971264179607,
+      "kl": 0.00320102548462221,
+      "completion_tokens": 32.625,
+      "completion_tokens_p95": 77.25,
+      "truncated": 0.0,
+      "flags": {
+        "added_limit": 0.125
+      },
+      "gen_s": 16.48,
+      "reward_s": 0.01,
+      "ref_s": 5.15,
+      "train_s": 23.3,
+      "peak_gib": 7.03,
+      "step": 71,
+      "minutes": 91.51
+    },
+    {
+      "reward": 0.625,
+      "correct": 0.625,
+      "executed": 0.875,
+      "executed_wrong": 0.25,
+      "failures": {
+        "no_such_column": 0.125
+      },
+      "zero_var_groups": 0.25,
+      "loss": 0.09433837505213205,
+      "kl": 0.0003729460506202061,
+      "completion_tokens": 35.1875,
+      "completion_tokens_p95": 60.0,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.03125
+      },
+      "gen_s": 21.27,
+      "reward_s": 0.01,
+      "ref_s": 8.04,
+      "train_s": 36.74,
+      "peak_gib": 6.27,
+      "step": 72,
+      "minutes": 92.61
+    },
+    {
+      "reward": 0.53125,
+      "correct": 0.53125,
+      "executed": 0.59375,
+      "executed_wrong": 0.0625,
+      "failures": {
+        "no_such_column": 0.375,
+        "syntax": 0.03125
+      },
+      "zero_var_groups": 0.5,
+      "loss": -0.04043833893138071,
+      "kl": 0.000612190406246962,
+      "completion_tokens": 41.4375,
+      "completion_tokens_p95": 75.14999999999999,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.03125
+      },
+      "gen_s": 16.83,
+      "reward_s": 0.01,
+      "ref_s": 5.24,
+      "train_s": 23.67,
+      "peak_gib": 7.01,
+      "step": 73,
+      "minutes": 93.37
+    },
+    {
+      "reward": 0.75,
+      "correct": 0.75,
+      "executed": 0.875,
+      "executed_wrong": 0.125,
+      "failures": {
+        "no_such_column": 0.09375,
+        "no_such_table": 0.03125
+      },
+      "zero_var_groups": 1.0,
+      "loss": 7.089452463415746e-06,
+      "kl": 0.00035447260384918543,
+      "completion_tokens": 29.0625,
+      "completion_tokens_p95": 73.9,
+      "truncated": 0.0,
+      "flags": {
+        "added_limit": 0.21875
+      },
+      "gen_s": 25.67,
+      "reward_s": 0.01,
+      "ref_s": 8.97,
+      "train_s": 41.82,
+      "peak_gib": 6.64,
+      "step": 74,
+      "minutes": 94.65
+    },
+    {
+      "reward": 0.625,
+      "correct": 0.625,
+      "executed": 0.75,
+      "executed_wrong": 0.125,
+      "failures": {
+        "no_such_column": 0.25
+      },
+      "zero_var_groups": 0.5,
+      "loss": -0.045242562691180765,
+      "kl": 0.0003867208615771671,
+      "completion_tokens": 32.6875,
+      "completion_tokens_p95": 61.45,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 36.08,
+      "reward_s": 0.01,
+      "ref_s": 12.43,
+      "train_s": 58.27,
+      "peak_gib": 7.17,
+      "step": 75,
+      "minutes": 96.43
+    },
+    {
+      "reward": 0.71875,
+      "correct": 0.71875,
+      "executed": 0.8125,
+      "executed_wrong": 0.09375,
+      "failures": {
+        "no_such_column": 0.125,
+        "no_such_table": 0.0625
+      },
+      "zero_var_groups": 0.25,
+      "loss": 0.08667023243276617,
+      "kl": 0.000633427939439183,
+      "completion_tokens": 30.78125,
+      "completion_tokens_p95": 51.9,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 29.22,
+      "reward_s": 0.01,
+      "ref_s": 9.15,
+      "train_s": 43.14,
+      "peak_gib": 5.82,
+      "step": 76,
+      "minutes": 97.79
+    },
+    {
+      "reward": 0.84375,
+      "correct": 0.84375,
+      "executed": 0.9375,
+      "executed_wrong": 0.09375,
+      "failures": {
+        "syntax": 0.0625
+      },
+      "zero_var_groups": 0.5,
+      "loss": -0.014044315214484016,
+      "kl": 0.0007334334534007031,
+      "completion_tokens": 43.8125,
+      "completion_tokens_p95": 76.9,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.03125
+      },
+      "gen_s": 19.42,
+      "reward_s": 0.01,
+      "ref_s": 5.5,
+      "train_s": 25.56,
+      "peak_gib": 7.52,
+      "step": 77,
+      "minutes": 98.63
+    },
+    {
+      "reward": 0.71875,
+      "correct": 0.71875,
+      "executed": 0.75,
+      "executed_wrong": 0.03125,
+      "failures": {
+        "no_such_column": 0.1875,
+        "no_such_table": 0.0625
+      },
+      "zero_var_groups": 0.5,
+      "loss": -0.012642684750926642,
+      "kl": 0.0005923272422813268,
+      "completion_tokens": 41.9375,
+      "completion_tokens_p95": 86.64999999999999,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 40.3,
+      "reward_s": 0.01,
+      "ref_s": 12.44,
+      "train_s": 59.52,
+      "peak_gib": 7.38,
+      "step": 78,
+      "minutes": 100.5
+    },
+    {
+      "reward": 0.8125,
+      "correct": 0.8125,
+      "executed": 0.96875,
+      "executed_wrong": 0.15625,
+      "failures": {
+        "no_such_column": 0.03125
+      },
+      "zero_var_groups": 0.5,
+      "loss": -0.01818447725387662,
+      "kl": 0.001144768650405073,
+      "completion_tokens": 32.34375,
+      "completion_tokens_p95": 55.699999999999996,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.0625
+      },
+      "gen_s": 24.69,
+      "reward_s": 0.01,
+      "ref_s": 8.16,
+      "train_s": 38.1,
+      "peak_gib": 6.48,
+      "step": 79,
+      "minutes": 101.69
+    },
+    {
+      "reward": 0.65625,
+      "correct": 0.65625,
+      "executed": 0.9375,
+      "executed_wrong": 0.28125,
+      "failures": {
+        "no_such_column": 0.03125,
+        "syntax": 0.03125
+      },
+      "zero_var_groups": 0.5,
+      "loss": -0.003432932344075823,
+      "kl": 0.00023237450512541682,
+      "completion_tokens": 50.28125,
+      "completion_tokens_p95": 120.0,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.0625
+      },
+      "gen_s": 24.86,
+      "reward_s": 0.01,
+      "ref_s": 7.06,
+      "train_s": 32.71,
+      "peak_gib": 7.23,
+      "step": 80,
+      "minutes": 102.77
+    },
+    {
+      "reward": 0.875,
+      "correct": 0.875,
+      "executed": 0.9375,
+      "executed_wrong": 0.0625,
+      "failures": {
+        "no_such_column": 0.03125
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.02729077812598346,
+      "kl": 0.00045809142371395454,
+      "completion_tokens": 37.90625,
+      "completion_tokens_p95": 95.9,
+      "truncated": 0.03125,
+      "flags": {
+        "truncated": 0.03125
+      },
+      "gen_s": 38.93,
+      "reward_s": 0.01,
+      "ref_s": 12.54,
+      "train_s": 59.38,
+      "peak_gib": 7.36,
+      "step": 81,
+      "minutes": 104.62
+    },
+    {
+      "reward": 0.59375,
+      "correct": 0.59375,
+      "executed": 0.65625,
+      "executed_wrong": 0.0625,
+      "failures": {
+        "no_such_column": 0.28125,
+        "no_such_table": 0.03125,
+        "other": 0.03125
+      },
+      "zero_var_groups": 0.25,
+      "loss": -0.03683704243296382,
+      "kl": 0.0010503310548960483,
+      "completion_tokens": 27.4375,
+      "completion_tokens_p95": 48.0,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.03125
+      },
+      "gen_s": 24.18,
+      "reward_s": 0.01,
+      "ref_s": 8.85,
+      "train_s": 42.45,
+      "peak_gib": 6.66,
+      "step": 82,
+      "minutes": 105.87
+    },
+    {
+      "reward": 0.3125,
+      "correct": 0.3125,
+      "executed": 0.6875,
+      "executed_wrong": 0.375,
+      "failures": {
+        "no_such_column": 0.03125,
+        "other": 0.1875,
+        "syntax": 0.09375
+      },
+      "zero_var_groups": 0.75,
+      "loss": 0.020526750127061177,
+      "kl": 0.001085287883057264,
+      "completion_tokens": 35.1875,
+      "completion_tokens_p95": 58.45,
+      "truncated": 0.0,
+      "flags": {
+        "added_limit": 0.25,
+        "empty_result": 0.03125
+      },
+      "gen_s": 36.72,
+      "reward_s": 0.01,
+      "ref_s": 10.42,
+      "train_s": 49.64,
+      "peak_gib": 6.54,
+      "step": 83,
+      "minutes": 107.49
+    },
+    {
+      "reward": 1.0,
+      "correct": 1.0,
+      "executed": 1.0,
+      "executed_wrong": 0.0,
+      "failures": {},
+      "zero_var_groups": 1.0,
+      "loss": 6.565161314142642e-06,
+      "kl": 0.0003282580578672713,
+      "completion_tokens": 34.5,
+      "completion_tokens_p95": 85.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 31.15,
+      "reward_s": 0.01,
+      "ref_s": 10.88,
+      "train_s": 50.02,
+      "peak_gib": 6.56,
+      "step": 84,
+      "minutes": 109.02
+    },
+    {
+      "reward": 0.84375,
+      "correct": 0.84375,
+      "executed": 0.875,
+      "executed_wrong": 0.03125,
+      "failures": {
+        "no_such_column": 0.125
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.01776244812104011,
+      "kl": 0.0013545610342815425,
+      "completion_tokens": 24.53125,
+      "completion_tokens_p95": 44.45,
+      "truncated": 0.0,
+      "flags": {
+        "added_limit": 0.03125,
+        "empty_result": 0.03125
+      },
+      "gen_s": 12.01,
+      "reward_s": 0.01,
+      "ref_s": 4.26,
+      "train_s": 19.06,
+      "peak_gib": 6.32,
+      "step": 85,
+      "minutes": 109.61
+    },
+    {
+      "reward": 0.5625,
+      "correct": 0.5625,
+      "executed": 0.6875,
+      "executed_wrong": 0.125,
+      "failures": {
+        "no_such_column": 0.25,
+        "other": 0.0625
+      },
+      "zero_var_groups": 0.5,
+      "loss": -0.03374127973178531,
+      "kl": 0.001275403676446364,
+      "completion_tokens": 34.96875,
+      "completion_tokens_p95": 67.45,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 30.26,
+      "reward_s": 0.01,
+      "ref_s": 9.62,
+      "train_s": 44.38,
+      "peak_gib": 5.95,
+      "step": 86,
+      "minutes": 111.02
+    },
+    {
+      "reward": 0.59375,
+      "correct": 0.59375,
+      "executed": 0.6875,
+      "executed_wrong": 0.09375,
+      "failures": {
+        "no_such_column": 0.1875,
+        "no_such_table": 0.03125,
+        "syntax": 0.0625
+      },
+      "zero_var_groups": 0.25,
+      "loss": 0.06630893955382078,
+      "kl": 0.0006079468876123428,
+      "completion_tokens": 45.0,
+      "completion_tokens_p95": 67.74999999999999,
+      "truncated": 0.03125,
+      "flags": {
+        "added_limit": 0.0625,
+        "truncated": 0.03125
+      },
+      "gen_s": 41.19,
+      "reward_s": 0.01,
+      "ref_s": 11.48,
+      "train_s": 54.28,
+      "peak_gib": 6.56,
+      "step": 87,
+      "minutes": 112.8
+    },
+    {
+      "reward": 0.8125,
+      "correct": 0.8125,
+      "executed": 0.90625,
+      "executed_wrong": 0.09375,
+      "failures": {
+        "no_such_column": 0.09375
+      },
+      "zero_var_groups": 0.75,
+      "loss": -0.002648229157069082,
+      "kl": 0.000342987608010328,
+      "completion_tokens": 33.96875,
+      "completion_tokens_p95": 61.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 32.16,
+      "reward_s": 0.01,
+      "ref_s": 10.45,
+      "train_s": 48.97,
+      "peak_gib": 6.54,
+      "step": 88,
+      "minutes": 114.33
+    },
+    {
+      "reward": 0.5,
+      "correct": 0.5,
+      "executed": 0.5,
+      "executed_wrong": 0.0,
+      "failures": {
+        "no_such_column": 0.5
+      },
+      "zero_var_groups": 1.0,
+      "loss": 3.145184236252874e-05,
+      "kl": 0.0015725922048761604,
+      "completion_tokens": 27.8125,
+      "completion_tokens_p95": 59.94999999999999,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 26.05,
+      "reward_s": 0.01,
+      "ref_s": 8.93,
+      "train_s": 41.43,
+      "peak_gib": 6.64,
+      "step": 89,
+      "minutes": 115.61
+    },
+    {
+      "reward": 0.6875,
+      "correct": 0.6875,
+      "executed": 0.875,
+      "executed_wrong": 0.1875,
+      "failures": {
+        "no_such_column": 0.09375,
+        "no_such_table": 0.03125
+      },
+      "zero_var_groups": 0.75,
+      "loss": 0.035394824568790284,
+      "kl": 0.0014616625966337108,
+      "completion_tokens": 28.5625,
+      "completion_tokens_p95": 52.45,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.03125
+      },
+      "gen_s": 22.74,
+      "reward_s": 0.16,
+      "ref_s": 8.28,
+      "train_s": 38.42,
+      "peak_gib": 6.52,
+      "step": 90,
+      "minutes": 116.77
+    },
+    {
+      "reward": 0.84375,
+      "correct": 0.84375,
+      "executed": 0.90625,
+      "executed_wrong": 0.0625,
+      "failures": {
+        "no_such_column": 0.0625,
+        "other": 0.03125
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.02403575315914175,
+      "kl": 0.0005303214236003597,
+      "completion_tokens": 30.75,
+      "completion_tokens_p95": 43.9,
+      "truncated": 0.0,
+      "flags": {
+        "added_limit": 0.0625
+      },
+      "gen_s": 19.62,
+      "reward_s": 0.01,
+      "ref_s": 7.75,
+      "train_s": 35.79,
+      "peak_gib": 6.25,
+      "step": 91,
+      "minutes": 117.82
+    },
+    {
+      "reward": 0.75,
+      "correct": 0.75,
+      "executed": 0.8125,
+      "executed_wrong": 0.0625,
+      "failures": {
+        "no_such_column": 0.1875
+      },
+      "zero_var_groups": 0.5,
+      "loss": -0.04512187131462042,
+      "kl": 0.0005168269691153318,
+      "completion_tokens": 22.78125,
+      "completion_tokens_p95": 36.9,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 20.57,
+      "reward_s": 0.02,
+      "ref_s": 8.36,
+      "train_s": 39.07,
+      "peak_gib": 6.52,
+      "step": 92,
+      "minutes": 118.96
+    },
+    {
+      "reward": 0.90625,
+      "correct": 0.90625,
+      "executed": 0.96875,
+      "executed_wrong": 0.0625,
+      "failures": {
+        "no_such_column": 0.03125
+      },
+      "zero_var_groups": 0.5,
+      "loss": -0.05308576505565199,
+      "kl": 0.0012667688648257635,
+      "completion_tokens": 17.65625,
+      "completion_tokens_p95": 27.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 16.19,
+      "reward_s": 0.01,
+      "ref_s": 7.82,
+      "train_s": 35.28,
+      "peak_gib": 6.23,
+      "step": 93,
+      "minutes": 119.95
+    },
+    {
+      "reward": 0.9375,
+      "correct": 0.9375,
+      "executed": 0.9375,
+      "executed_wrong": 0.0,
+      "failures": {
+        "no_such_column": 0.0625
+      },
+      "zero_var_groups": 0.75,
+      "loss": -0.010816998801939093,
+      "kl": 0.0005025469544065236,
+      "completion_tokens": 26.65625,
+      "completion_tokens_p95": 45.45,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 18.84,
+      "reward_s": 0.01,
+      "ref_s": 6.49,
+      "train_s": 30.01,
+      "peak_gib": 7.05,
+      "step": 94,
+      "minutes": 120.87
+    },
+    {
+      "reward": 0.40625,
+      "correct": 0.40625,
+      "executed": 0.5,
+      "executed_wrong": 0.09375,
+      "failures": {
+        "no_such_column": 0.375,
+        "no_such_table": 0.0625,
+        "syntax": 0.0625
+      },
+      "zero_var_groups": 0.5,
+      "loss": -0.007939373381333326,
+      "kl": 0.001112121275101585,
+      "completion_tokens": 40.78125,
+      "completion_tokens_p95": 82.6,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 28.19,
+      "reward_s": 0.01,
+      "ref_s": 8.37,
+      "train_s": 37.86,
+      "peak_gib": 6.15,
+      "step": 95,
+      "minutes": 122.11
+    },
+    {
+      "reward": 0.75,
+      "correct": 0.75,
+      "executed": 0.90625,
+      "executed_wrong": 0.15625,
+      "failures": {
+        "no_such_column": 0.03125,
+        "no_such_table": 0.0625
+      },
+      "zero_var_groups": 0.25,
+      "loss": 0.008999264372505422,
+      "kl": 0.0014068171957772818,
+      "completion_tokens": 33.15625,
+      "completion_tokens_p95": 50.45,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.125
+      },
+      "gen_s": 39.58,
+      "reward_s": 0.01,
+      "ref_s": 12.28,
+      "train_s": 58.83,
+      "peak_gib": 7.38,
+      "step": 96,
+      "minutes": 123.96
+    },
+    {
+      "reward": 0.875,
+      "correct": 0.875,
+      "executed": 0.90625,
+      "executed_wrong": 0.03125,
+      "failures": {
+        "no_such_column": 0.03125,
+        "other": 0.03125,
+        "syntax": 0.03125
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.049803854292204464,
+      "kl": 0.0007417146991563323,
+      "completion_tokens": 37.25,
+      "completion_tokens_p95": 60.9,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 18.9,
+      "reward_s": 0.01,
+      "ref_s": 5.44,
+      "train_s": 24.72,
+      "peak_gib": 7.07,
+      "step": 97,
+      "minutes": 124.78
+    },
+    {
+      "reward": 0.84375,
+      "correct": 0.84375,
+      "executed": 0.875,
+      "executed_wrong": 0.03125,
+      "failures": {
+        "no_such_column": 0.125
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.11796827679734656,
+      "kl": 0.0006269464492797851,
+      "completion_tokens": 27.34375,
+      "completion_tokens_p95": 53.849999999999994,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.03125
+      },
+      "gen_s": 12.46,
+      "reward_s": 0.01,
+      "ref_s": 4.24,
+      "train_s": 19.13,
+      "peak_gib": 6.38,
+      "step": 98,
+      "minutes": 125.37
+    },
+    {
+      "reward": 0.65625,
+      "correct": 0.65625,
+      "executed": 0.75,
+      "executed_wrong": 0.09375,
+      "failures": {
+        "no_such_column": 0.21875,
+        "other": 0.03125
+      },
+      "zero_var_groups": 0.25,
+      "loss": -0.026198343948911074,
+      "kl": 0.0015534455523382213,
+      "completion_tokens": 31.53125,
+      "completion_tokens_p95": 65.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 13.12,
+      "reward_s": 0.01,
+      "ref_s": 4.28,
+      "train_s": 19.45,
+      "peak_gib": 6.36,
+      "step": 99,
+      "minutes": 125.99
+    },
+    {
+      "reward": 0.71875,
+      "correct": 0.71875,
+      "executed": 0.78125,
+      "executed_wrong": 0.0625,
+      "failures": {
+        "no_such_column": 0.09375,
+        "no_such_table": 0.125
+      },
+      "zero_var_groups": 0.25,
+      "loss": -0.02088536167790478,
+      "kl": 0.0005779562026060462,
+      "completion_tokens": 55.375,
+      "completion_tokens_p95": 105.35,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.03125
+      },
+      "gen_s": 15.69,
+      "reward_s": 0.01,
+      "ref_s": 4.31,
+      "train_s": 19.58,
+      "peak_gib": 6.09,
+      "step": 100,
+      "minutes": 126.65,
+      "val_ex": 0.71
+    },
+    {
+      "reward": 0.53125,
+      "correct": 0.53125,
+      "executed": 0.75,
+      "executed_wrong": 0.21875,
+      "failures": {
+        "no_such_column": 0.125,
+        "other": 0.0625,
+        "syntax": 0.0625
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.007015796300734678,
+      "kl": 0.0013077615334367843,
+      "completion_tokens": 32.9375,
+      "completion_tokens_p95": 65.39999999999999,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.0625
+      },
+      "gen_s": 40.96,
+      "reward_s": 0.01,
+      "ref_s": 12.49,
+      "train_s": 60.65,
+      "peak_gib": 7.69,
+      "step": 101,
+      "minutes": 131.68
+    },
+    {
+      "reward": 0.9375,
+      "correct": 0.9375,
+      "executed": 1.0,
+      "executed_wrong": 0.0625,
+      "failures": {},
+      "zero_var_groups": 0.5,
+      "loss": 0.0008104931932653159,
+      "kl": 0.0004137911993986482,
+      "completion_tokens": 29.4375,
+      "completion_tokens_p95": 59.899999999999984,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.03125
+      },
+      "gen_s": 24.19,
+      "reward_s": 0.01,
+      "ref_s": 9.22,
+      "train_s": 43.17,
+      "peak_gib": 6.66,
+      "step": 102,
+      "minutes": 132.96
+    },
+    {
+      "reward": 0.5,
+      "correct": 0.5,
+      "executed": 0.8125,
+      "executed_wrong": 0.3125,
+      "failures": {
+        "no_such_column": 0.15625,
+        "other": 0.03125
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.002994335726270947,
+      "kl": 0.000956874722101557,
+      "completion_tokens": 31.75,
+      "completion_tokens_p95": 77.69999999999999,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 34.17,
+      "reward_s": 0.01,
+      "ref_s": 11.28,
+      "train_s": 52.08,
+      "peak_gib": 6.54,
+      "step": 103,
+      "minutes": 134.58
+    },
+    {
+      "reward": 0.75,
+      "correct": 0.75,
+      "executed": 0.78125,
+      "executed_wrong": 0.03125,
+      "failures": {
+        "no_such_column": 0.21875
+      },
+      "zero_var_groups": 1.0,
+      "loss": 1.779126631795691e-05,
+      "kl": 0.0008895633625368351,
+      "completion_tokens": 16.9375,
+      "completion_tokens_p95": 39.94999999999999,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.03125
+      },
+      "gen_s": 13.59,
+      "reward_s": 0.01,
+      "ref_s": 5.06,
+      "train_s": 22.76,
+      "peak_gib": 7.19,
+      "step": 104,
+      "minutes": 135.28
+    },
+    {
+      "reward": 0.71875,
+      "correct": 0.71875,
+      "executed": 0.78125,
+      "executed_wrong": 0.0625,
+      "failures": {
+        "no_such_column": 0.125,
+        "other": 0.09375
+      },
+      "zero_var_groups": 0.25,
+      "loss": -0.10299311691226976,
+      "kl": 0.001477394725820842,
+      "completion_tokens": 44.8125,
+      "completion_tokens_p95": 73.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 26.58,
+      "reward_s": 0.01,
+      "ref_s": 8.87,
+      "train_s": 42.45,
+      "peak_gib": 6.62,
+      "step": 105,
+      "minutes": 136.58
+    },
+    {
+      "reward": 0.5,
+      "correct": 0.5,
+      "executed": 0.59375,
+      "executed_wrong": 0.09375,
+      "failures": {
+        "no_such_column": 0.34375,
+        "no_such_table": 0.03125,
+        "syntax": 0.03125
+      },
+      "zero_var_groups": 0.25,
+      "loss": -0.07132559359918389,
+      "kl": 0.0011594200031065838,
+      "completion_tokens": 43.3125,
+      "completion_tokens_p95": 64.9,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 26.23,
+      "reward_s": 0.01,
+      "ref_s": 8.33,
+      "train_s": 39.14,
+      "peak_gib": 6.49,
+      "step": 106,
+      "minutes": 137.8
+    },
+    {
+      "reward": 0.96875,
+      "correct": 0.96875,
+      "executed": 0.96875,
+      "executed_wrong": 0.0,
+      "failures": {
+        "no_such_table": 0.03125
+      },
+      "zero_var_groups": 0.75,
+      "loss": 0.13149785163120087,
+      "kl": 0.00044402531410494455,
+      "completion_tokens": 16.34375,
+      "completion_tokens_p95": 21.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 16.08,
+      "reward_s": 0.01,
+      "ref_s": 6.25,
+      "train_s": 28.44,
+      "peak_gib": 8.09,
+      "step": 107,
+      "minutes": 138.65
+    },
+    {
+      "reward": 0.65625,
+      "correct": 0.65625,
+      "executed": 0.84375,
+      "executed_wrong": 0.1875,
+      "failures": {
+        "no_such_column": 0.15625
+      },
+      "zero_var_groups": 0.25,
+      "loss": -0.01887809793181594,
+      "kl": 0.0017547838491936254,
+      "completion_tokens": 22.8125,
+      "completion_tokens_p95": 39.25,
+      "truncated": 0.0,
+      "flags": {
+        "added_limit": 0.03125
+      },
+      "gen_s": 35.3,
+      "reward_s": 0.01,
+      "ref_s": 12.27,
+      "train_s": 59.56,
+      "peak_gib": 7.69,
+      "step": 108,
+      "minutes": 140.44
+    },
+    {
+      "reward": 0.59375,
+      "correct": 0.59375,
+      "executed": 0.65625,
+      "executed_wrong": 0.0625,
+      "failures": {
+        "no_such_column": 0.34375
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.011737124050910097,
+      "kl": 0.0012120495782821181,
+      "completion_tokens": 42.3125,
+      "completion_tokens_p95": 64.0,
+      "truncated": 0.0,
+      "flags": {
+        "added_limit": 0.0625,
+        "empty_result": 0.0625
+      },
+      "gen_s": 11.59,
+      "reward_s": 0.01,
+      "ref_s": 4.15,
+      "train_s": 18.01,
+      "peak_gib": 6.03,
+      "step": 109,
+      "minutes": 141.0
+    },
+    {
+      "reward": 0.875,
+      "correct": 0.875,
+      "executed": 0.96875,
+      "executed_wrong": 0.09375,
+      "failures": {
+        "no_such_column": 0.03125
+      },
+      "zero_var_groups": 0.5,
+      "loss": -0.060569173933592735,
+      "kl": 0.00038903592488704583,
+      "completion_tokens": 24.375,
+      "completion_tokens_p95": 46.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 16.13,
+      "reward_s": 0.01,
+      "ref_s": 6.33,
+      "train_s": 28.86,
+      "peak_gib": 8.08,
+      "step": 110,
+      "minutes": 141.86
+    },
+    {
+      "reward": 0.8125,
+      "correct": 0.8125,
+      "executed": 0.90625,
+      "executed_wrong": 0.09375,
+      "failures": {
+        "no_such_column": 0.09375
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.055643853588309256,
+      "kl": 0.0011672139167785644,
+      "completion_tokens": 33.59375,
+      "completion_tokens_p95": 56.45,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 37.15,
+      "reward_s": 0.01,
+      "ref_s": 12.62,
+      "train_s": 58.47,
+      "peak_gib": 7.38,
+      "step": 111,
+      "minutes": 143.66
+    },
+    {
+      "reward": 0.6875,
+      "correct": 0.6875,
+      "executed": 0.9375,
+      "executed_wrong": 0.25,
+      "failures": {
+        "no_such_column": 0.03125,
+        "other": 0.03125
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.03123611793608916,
+      "kl": 0.0004415542461983757,
+      "completion_tokens": 22.6875,
+      "completion_tokens_p95": 40.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 18.87,
+      "reward_s": 0.01,
+      "ref_s": 8.39,
+      "train_s": 37.64,
+      "peak_gib": 6.23,
+      "step": 112,
+      "minutes": 144.75
+    },
+    {
+      "reward": 0.9375,
+      "correct": 0.9375,
+      "executed": 0.96875,
+      "executed_wrong": 0.03125,
+      "failures": {
+        "no_such_column": 0.03125
+      },
+      "zero_var_groups": 0.75,
+      "loss": 0.013333142826830624,
+      "kl": 0.0010032923846111266,
+      "completion_tokens": 18.96875,
+      "completion_tokens_p95": 23.45,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 16.11,
+      "reward_s": 0.01,
+      "ref_s": 6.56,
+      "train_s": 29.9,
+      "peak_gib": 7.03,
+      "step": 113,
+      "minutes": 145.62
+    },
+    {
+      "reward": 0.625,
+      "correct": 0.625,
+      "executed": 0.84375,
+      "executed_wrong": 0.21875,
+      "failures": {
+        "no_such_column": 0.15625
+      },
+      "zero_var_groups": 0.75,
+      "loss": 0.07810915483233316,
+      "kl": 0.0006588983945068883,
+      "completion_tokens": 36.40625,
+      "completion_tokens_p95": 66.29999999999998,
+      "truncated": 0.0,
+      "flags": {
+        "added_limit": 0.25
+      },
+      "gen_s": 25.09,
+      "reward_s": 0.01,
+      "ref_s": 8.15,
+      "train_s": 36.46,
+      "peak_gib": 6.15,
+      "step": 114,
+      "minutes": 146.79
+    },
+    {
+      "reward": 0.5625,
+      "correct": 0.5625,
+      "executed": 0.5625,
+      "executed_wrong": 0.0,
+      "failures": {
+        "no_such_column": 0.375,
+        "no_such_table": 0.03125,
+        "other": 0.03125
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.06765032297860074,
+      "kl": 0.0020382421672659576,
+      "completion_tokens": 35.4375,
+      "completion_tokens_p95": 59.9,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 12.45,
+      "reward_s": 0.01,
+      "ref_s": 4.25,
+      "train_s": 18.39,
+      "peak_gib": 6.15,
+      "step": 115,
+      "minutes": 147.37
+    },
+    {
+      "reward": 0.75,
+      "correct": 0.75,
+      "executed": 0.875,
+      "executed_wrong": 0.125,
+      "failures": {
+        "no_such_column": 0.03125,
+        "syntax": 0.0625
+      },
+      "zero_var_groups": 0.25,
+      "loss": 0.1799934245903927,
+      "kl": 0.0005643144660039779,
+      "completion_tokens": 34.0625,
+      "completion_tokens_p95": 45.45,
+      "truncated": 0.03125,
+      "flags": {
+        "empty_result": 0.03125,
+        "truncated": 0.03125
+      },
+      "gen_s": 30.87,
+      "reward_s": 0.01,
+      "ref_s": 9.63,
+      "train_s": 44.72,
+      "peak_gib": 6.66,
+      "step": 116,
+      "minutes": 148.8
+    },
+    {
+      "reward": 0.96875,
+      "correct": 0.96875,
+      "executed": 1.0,
+      "executed_wrong": 0.03125,
+      "failures": {},
+      "zero_var_groups": 0.75,
+      "loss": 0.016944987708043868,
+      "kl": 0.0027568247430930495,
+      "completion_tokens": 24.46875,
+      "completion_tokens_p95": 41.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 11.52,
+      "reward_s": 0.01,
+      "ref_s": 4.31,
+      "train_s": 19.59,
+      "peak_gib": 6.6,
+      "step": 117,
+      "minutes": 149.39
+    },
+    {
+      "reward": 0.6875,
+      "correct": 0.6875,
+      "executed": 0.9375,
+      "executed_wrong": 0.25,
+      "failures": {
+        "no_such_column": 0.03125,
+        "syntax": 0.03125
+      },
+      "zero_var_groups": 0.75,
+      "loss": 0.07239970058498457,
+      "kl": 0.0017367612823272526,
+      "completion_tokens": 21.1875,
+      "completion_tokens_p95": 51.349999999999994,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 22.54,
+      "reward_s": 0.01,
+      "ref_s": 8.57,
+      "train_s": 39.58,
+      "peak_gib": 6.6,
+      "step": 118,
+      "minutes": 150.57
+    },
+    {
+      "reward": 0.71875,
+      "correct": 0.71875,
+      "executed": 0.71875,
+      "executed_wrong": 0.0,
+      "failures": {
+        "no_such_column": 0.21875,
+        "no_such_table": 0.0625
+      },
+      "zero_var_groups": 0.75,
+      "loss": 1.688100049968e-05,
+      "kl": 0.0008438693538699136,
+      "completion_tokens": 32.15625,
+      "completion_tokens_p95": 51.0,
+      "truncated": 0.0,
+      "flags": {
+        "added_limit": 0.25
+      },
+      "gen_s": 36.03,
+      "reward_s": 0.01,
+      "ref_s": 12.3,
+      "train_s": 59.78,
+      "peak_gib": 7.7,
+      "step": 119,
+      "minutes": 152.37
+    },
+    {
+      "reward": 0.875,
+      "correct": 0.875,
+      "executed": 0.9375,
+      "executed_wrong": 0.0625,
+      "failures": {
+        "no_such_column": 0.03125,
+        "other": 0.03125
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.07200981852474797,
+      "kl": 0.0009296663234688643,
+      "completion_tokens": 27.03125,
+      "completion_tokens_p95": 56.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 12.91,
+      "reward_s": 0.01,
+      "ref_s": 4.24,
+      "train_s": 19.27,
+      "peak_gib": 6.31,
+      "step": 120,
+      "minutes": 152.98
+    },
+    {
+      "reward": 0.71875,
+      "correct": 0.71875,
+      "executed": 1.0,
+      "executed_wrong": 0.28125,
+      "failures": {},
+      "zero_var_groups": 0.75,
+      "loss": 0.18864943015723057,
+      "kl": 0.0005499620177134396,
+      "completion_tokens": 20.59375,
+      "completion_tokens_p95": 23.0,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.25
+      },
+      "gen_s": 22.05,
+      "reward_s": 0.01,
+      "ref_s": 8.52,
+      "train_s": 38.95,
+      "peak_gib": 6.58,
+      "step": 121,
+      "minutes": 154.14
+    },
+    {
+      "reward": 0.78125,
+      "correct": 0.78125,
+      "executed": 0.96875,
+      "executed_wrong": 0.1875,
+      "failures": {
+        "other": 0.03125
+      },
+      "zero_var_groups": 0.25,
+      "loss": 0.061267315689292445,
+      "kl": 0.002334159468034318,
+      "completion_tokens": 36.0625,
+      "completion_tokens_p95": 59.45,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 27.28,
+      "reward_s": 0.02,
+      "ref_s": 8.62,
+      "train_s": 40.73,
+      "peak_gib": 6.52,
+      "step": 122,
+      "minutes": 155.42
+    },
+    {
+      "reward": 0.84375,
+      "correct": 0.84375,
+      "executed": 0.96875,
+      "executed_wrong": 0.125,
+      "failures": {
+        "no_such_column": 0.03125
+      },
+      "zero_var_groups": 0.75,
+      "loss": -0.03725107228872737,
+      "kl": 0.001250042928214337,
+      "completion_tokens": 23.15625,
+      "completion_tokens_p95": 48.8,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.0625
+      },
+      "gen_s": 20.95,
+      "reward_s": 0.01,
+      "ref_s": 8.39,
+      "train_s": 39.28,
+      "peak_gib": 6.62,
+      "step": 123,
+      "minutes": 156.56
+    },
+    {
+      "reward": 0.84375,
+      "correct": 0.84375,
+      "executed": 0.9375,
+      "executed_wrong": 0.09375,
+      "failures": {
+        "no_such_column": 0.0625
+      },
+      "zero_var_groups": 0.75,
+      "loss": 0.06806328098892389,
+      "kl": 0.0010859154569455229,
+      "completion_tokens": 39.125,
+      "completion_tokens_p95": 107.0,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.09375
+      },
+      "gen_s": 37.31,
+      "reward_s": 0.01,
+      "ref_s": 11.06,
+      "train_s": 50.32,
+      "peak_gib": 6.54,
+      "step": 124,
+      "minutes": 158.21
+    },
+    {
+      "reward": 0.9375,
+      "correct": 0.9375,
+      "executed": 1.0,
+      "executed_wrong": 0.0625,
+      "failures": {},
+      "zero_var_groups": 0.5,
+      "loss": -0.026630287993185675,
+      "kl": 0.0015854288093836068,
+      "completion_tokens": 28.34375,
+      "completion_tokens_p95": 63.849999999999994,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.0625
+      },
+      "gen_s": 11.08,
+      "reward_s": 0.01,
+      "ref_s": 3.32,
+      "train_s": 15.01,
+      "peak_gib": 5.64,
+      "step": 125,
+      "minutes": 158.7
+    },
+    {
+      "reward": 0.84375,
+      "correct": 0.84375,
+      "executed": 0.875,
+      "executed_wrong": 0.03125,
+      "failures": {
+        "no_such_column": 0.09375,
+        "other": 0.03125
+      },
+      "zero_var_groups": 0.25,
+      "loss": 0.013658205167359938,
+      "kl": 0.0020261075710044296,
+      "completion_tokens": 40.15625,
+      "completion_tokens_p95": 73.45,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.03125
+      },
+      "gen_s": 27.53,
+      "reward_s": 0.01,
+      "ref_s": 8.97,
+      "train_s": 42.14,
+      "peak_gib": 6.56,
+      "step": 126,
+      "minutes": 160.01
+    },
+    {
+      "reward": 0.84375,
+      "correct": 0.84375,
+      "executed": 0.9375,
+      "executed_wrong": 0.09375,
+      "failures": {
+        "no_such_table": 0.03125,
+        "syntax": 0.03125
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.026044244007508155,
+      "kl": 0.0011506359358340647,
+      "completion_tokens": 32.34375,
+      "completion_tokens_p95": 45.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 33.03,
+      "reward_s": 0.02,
+      "ref_s": 11.34,
+      "train_s": 52.53,
+      "peak_gib": 6.53,
+      "step": 127,
+      "minutes": 161.63
+    },
+    {
+      "reward": 0.78125,
+      "correct": 0.78125,
+      "executed": 0.84375,
+      "executed_wrong": 0.0625,
+      "failures": {
+        "no_such_column": 0.15625
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.1148578014514614,
+      "kl": 0.0011563651178074978,
+      "completion_tokens": 27.1875,
+      "completion_tokens_p95": 54.29999999999999,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.03125
+      },
+      "gen_s": 30.73,
+      "reward_s": 0.01,
+      "ref_s": 10.49,
+      "train_s": 49.24,
+      "peak_gib": 6.52,
+      "step": 128,
+      "minutes": 163.14
+    },
+    {
+      "reward": 0.8125,
+      "correct": 0.8125,
+      "executed": 0.84375,
+      "executed_wrong": 0.03125,
+      "failures": {
+        "no_such_column": 0.0625,
+        "no_such_table": 0.03125,
+        "syntax": 0.0625
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.16157734027731008,
+      "kl": 0.0023829599906658302,
+      "completion_tokens": 31.71875,
+      "completion_tokens_p95": 80.9,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 27.29,
+      "reward_s": 0.01,
+      "ref_s": 8.99,
+      "train_s": 42.16,
+      "peak_gib": 6.58,
+      "step": 129,
+      "minutes": 164.44
+    },
+    {
+      "reward": 0.71875,
+      "correct": 0.71875,
+      "executed": 0.9375,
+      "executed_wrong": 0.21875,
+      "failures": {
+        "other": 0.03125,
+        "syntax": 0.03125
+      },
+      "zero_var_groups": 0.75,
+      "loss": -0.0077416550104491555,
+      "kl": 0.00221750714562156,
+      "completion_tokens": 25.78125,
+      "completion_tokens_p95": 46.349999999999994,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 10.23,
+      "reward_s": 0.01,
+      "ref_s": 3.49,
+      "train_s": 15.73,
+      "peak_gib": 6.0,
+      "step": 130,
+      "minutes": 164.94
+    },
+    {
+      "reward": 0.90625,
+      "correct": 0.90625,
+      "executed": 0.9375,
+      "executed_wrong": 0.03125,
+      "failures": {
+        "no_such_column": 0.0625
+      },
+      "zero_var_groups": 0.5,
+      "loss": -0.0323282166300487,
+      "kl": 0.002612641768726876,
+      "completion_tokens": 38.4375,
+      "completion_tokens_p95": 45.9,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 24.03,
+      "reward_s": 0.01,
+      "ref_s": 8.43,
+      "train_s": 39.82,
+      "peak_gib": 6.58,
+      "step": 131,
+      "minutes": 166.14
+    },
+    {
+      "reward": 0.71875,
+      "correct": 0.71875,
+      "executed": 0.8125,
+      "executed_wrong": 0.09375,
+      "failures": {
+        "no_such_column": 0.125,
+        "no_such_table": 0.0625
+      },
+      "zero_var_groups": 0.75,
+      "loss": -0.0411720549725203,
+      "kl": 0.003608169480108879,
+      "completion_tokens": 35.5,
+      "completion_tokens_p95": 80.35,
+      "truncated": 0.0,
+      "flags": {
+        "added_limit": 0.125
+      },
+      "gen_s": 14.65,
+      "reward_s": 0.01,
+      "ref_s": 4.26,
+      "train_s": 18.68,
+      "peak_gib": 6.19,
+      "step": 132,
+      "minutes": 166.77
+    },
+    {
+      "reward": 0.9375,
+      "correct": 0.9375,
+      "executed": 1.0,
+      "executed_wrong": 0.0625,
+      "failures": {},
+      "zero_var_groups": 0.75,
+      "loss": 0.018878523013198034,
+      "kl": 0.0011037814206090466,
+      "completion_tokens": 17.21875,
+      "completion_tokens_p95": 19.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 18.23,
+      "reward_s": 0.02,
+      "ref_s": 8.39,
+      "train_s": 39.03,
+      "peak_gib": 6.66,
+      "step": 133,
+      "minutes": 167.87
+    },
+    {
+      "reward": 0.4375,
+      "correct": 0.4375,
+      "executed": 0.8125,
+      "executed_wrong": 0.375,
+      "failures": {
+        "no_such_column": 0.15625,
+        "syntax": 0.03125
+      },
+      "zero_var_groups": 0.75,
+      "loss": 0.002149458599319587,
+      "kl": 0.0024152497915445486,
+      "completion_tokens": 60.09375,
+      "completion_tokens_p95": 118.0,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.09375
+      },
+      "gen_s": 20.53,
+      "reward_s": 0.01,
+      "ref_s": 5.33,
+      "train_s": 24.29,
+      "peak_gib": 7.03,
+      "step": 134,
+      "minutes": 168.7
+    },
+    {
+      "reward": 0.90625,
+      "correct": 0.90625,
+      "executed": 1.0,
+      "executed_wrong": 0.09375,
+      "failures": {},
+      "zero_var_groups": 0.5,
+      "loss": 0.013603161497030669,
+      "kl": 0.0005463573210280581,
+      "completion_tokens": 19.90625,
+      "completion_tokens_p95": 27.0,
+      "truncated": 0.0,
+      "flags": {
+        "select_star": 0.03125
+      },
+      "gen_s": 11.39,
+      "reward_s": 0.01,
+      "ref_s": 4.43,
+      "train_s": 20.99,
+      "peak_gib": 7.01,
+      "step": 135,
+      "minutes": 169.32
+    },
+    {
+      "reward": 0.90625,
+      "correct": 0.90625,
+      "executed": 0.96875,
+      "executed_wrong": 0.0625,
+      "failures": {
+        "no_such_column": 0.03125
+      },
+      "zero_var_groups": 0.5,
+      "loss": -0.0741217955849216,
+      "kl": 0.0030807341344257786,
+      "completion_tokens": 26.40625,
+      "completion_tokens_p95": 69.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 33.96,
+      "reward_s": 0.01,
+      "ref_s": 12.2,
+      "train_s": 57.46,
+      "peak_gib": 7.38,
+      "step": 136,
+      "minutes": 171.05
+    },
+    {
+      "reward": 0.59375,
+      "correct": 0.59375,
+      "executed": 0.9375,
+      "executed_wrong": 0.34375,
+      "failures": {
+        "no_such_column": 0.03125,
+        "other": 0.03125
+      },
+      "zero_var_groups": 0.25,
+      "loss": 0.12424768491973737,
+      "kl": 0.005605161809301995,
+      "completion_tokens": 24.0625,
+      "completion_tokens_p95": 43.25,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.03125
+      },
+      "gen_s": 19.85,
+      "reward_s": 0.01,
+      "ref_s": 6.36,
+      "train_s": 29.56,
+      "peak_gib": 7.03,
+      "step": 137,
+      "minutes": 171.98
+    },
+    {
+      "reward": 0.65625,
+      "correct": 0.65625,
+      "executed": 0.78125,
+      "executed_wrong": 0.125,
+      "failures": {
+        "no_such_column": 0.15625,
+        "no_such_table": 0.03125,
+        "syntax": 0.03125
+      },
+      "zero_var_groups": 0.5,
+      "loss": -0.1003196372309283,
+      "kl": 0.0032963100982748945,
+      "completion_tokens": 28.75,
+      "completion_tokens_p95": 46.349999999999994,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 29.85,
+      "reward_s": 0.01,
+      "ref_s": 10.57,
+      "train_s": 48.97,
+      "peak_gib": 6.54,
+      "step": 138,
+      "minutes": 173.47
+    },
+    {
+      "reward": 0.59375,
+      "correct": 0.59375,
+      "executed": 0.84375,
+      "executed_wrong": 0.25,
+      "failures": {
+        "no_such_column": 0.09375,
+        "other": 0.0625
+      },
+      "zero_var_groups": 0.25,
+      "loss": -0.019783515118440675,
+      "kl": 0.0018545410250493427,
+      "completion_tokens": 34.46875,
+      "completion_tokens_p95": 61.0,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.125
+      },
+      "gen_s": 23.87,
+      "reward_s": 0.01,
+      "ref_s": 9.08,
+      "train_s": 42.67,
+      "peak_gib": 6.64,
+      "step": 139,
+      "minutes": 174.73
+    },
+    {
+      "reward": 0.40625,
+      "correct": 0.40625,
+      "executed": 0.90625,
+      "executed_wrong": 0.5,
+      "failures": {
+        "no_such_column": 0.03125,
+        "no_such_table": 0.03125,
+        "syntax": 0.03125
+      },
+      "zero_var_groups": 0.25,
+      "loss": 0.09001161644084732,
+      "kl": 0.002821507339162388,
+      "completion_tokens": 43.5,
+      "completion_tokens_p95": 68.9,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.0625
+      },
+      "gen_s": 14.17,
+      "reward_s": 0.01,
+      "ref_s": 4.25,
+      "train_s": 19.19,
+      "peak_gib": 6.25,
+      "step": 140,
+      "minutes": 175.36
+    },
+    {
+      "reward": 0.875,
+      "correct": 0.875,
+      "executed": 0.9375,
+      "executed_wrong": 0.0625,
+      "failures": {
+        "no_such_column": 0.03125,
+        "no_such_table": 0.03125
+      },
+      "zero_var_groups": 0.0,
+      "loss": 0.1124327052384615,
+      "kl": 0.001972175251353871,
+      "completion_tokens": 42.96875,
+      "completion_tokens_p95": 56.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 41.79,
+      "reward_s": 0.01,
+      "ref_s": 11.93,
+      "train_s": 57.29,
+      "peak_gib": 7.38,
+      "step": 141,
+      "minutes": 177.21
+    },
+    {
+      "reward": 0.84375,
+      "correct": 0.84375,
+      "executed": 0.875,
+      "executed_wrong": 0.03125,
+      "failures": {
+        "no_such_column": 0.0625,
+        "other": 0.03125,
+        "syntax": 0.03125
+      },
+      "zero_var_groups": 0.25,
+      "loss": 0.08965954289340061,
+      "kl": 0.0022516678394883445,
+      "completion_tokens": 39.1875,
+      "completion_tokens_p95": 64.0,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.03125
+      },
+      "gen_s": 21.77,
+      "reward_s": 0.01,
+      "ref_s": 6.8,
+      "train_s": 32.04,
+      "peak_gib": 7.07,
+      "step": 142,
+      "minutes": 178.22
+    },
+    {
+      "reward": 0.90625,
+      "correct": 0.90625,
+      "executed": 0.96875,
+      "executed_wrong": 0.0625,
+      "failures": {
+        "no_such_column": 0.03125
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.03455592627392434,
+      "kl": 0.0019027713037306263,
+      "completion_tokens": 24.21875,
+      "completion_tokens_p95": 36.699999999999996,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 34.58,
+      "reward_s": 0.01,
+      "ref_s": 12.0,
+      "train_s": 58.7,
+      "peak_gib": 7.67,
+      "step": 143,
+      "minutes": 179.98
+    },
+    {
+      "reward": 0.90625,
+      "correct": 0.90625,
+      "executed": 0.90625,
+      "executed_wrong": 0.0,
+      "failures": {
+        "no_such_column": 0.09375
+      },
+      "zero_var_groups": 0.5,
+      "loss": -0.11443181599198438,
+      "kl": 0.0007098293150182597,
+      "completion_tokens": 43.46875,
+      "completion_tokens_p95": 114.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 29.04,
+      "reward_s": 0.01,
+      "ref_s": 9.06,
+      "train_s": 42.88,
+      "peak_gib": 6.6,
+      "step": 144,
+      "minutes": 181.33
+    },
+    {
+      "reward": 0.75,
+      "correct": 0.75,
+      "executed": 0.78125,
+      "executed_wrong": 0.03125,
+      "failures": {
+        "no_such_column": 0.21875
+      },
+      "zero_var_groups": 1.0,
+      "loss": 2.048643345986534e-05,
+      "kl": 0.0010243217253314398,
+      "completion_tokens": 24.125,
+      "completion_tokens_p95": 41.0,
+      "truncated": 0.0,
+      "flags": {
+        "empty_result": 0.03125
+      },
+      "gen_s": 21.16,
+      "reward_s": 0.01,
+      "ref_s": 8.48,
+      "train_s": 39.49,
+      "peak_gib": 6.62,
+      "step": 145,
+      "minutes": 182.48
+    },
+    {
+      "reward": 0.65625,
+      "correct": 0.65625,
+      "executed": 0.96875,
+      "executed_wrong": 0.3125,
+      "failures": {
+        "no_such_column": 0.03125
+      },
+      "zero_var_groups": 0.75,
+      "loss": 0.04584797179996514,
+      "kl": 0.0019627746684566173,
+      "completion_tokens": 29.9375,
+      "completion_tokens_p95": 44.849999999999994,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 35.11,
+      "reward_s": 0.01,
+      "ref_s": 11.47,
+      "train_s": 55.15,
+      "peak_gib": 7.15,
+      "step": 146,
+      "minutes": 184.18
+    },
+    {
+      "reward": 0.6875,
+      "correct": 0.6875,
+      "executed": 0.9375,
+      "executed_wrong": 0.25,
+      "failures": {
+        "no_such_column": 0.0625
+      },
+      "zero_var_groups": 0.5,
+      "loss": 0.0780065852631111,
+      "kl": 0.0007439992767139834,
+      "completion_tokens": 33.15625,
+      "completion_tokens_p95": 47.94999999999999,
+      "truncated": 0.0,
+      "flags": {
+        "added_limit": 0.03125
+      },
+      "gen_s": 28.84,
+      "reward_s": 0.01,
+      "ref_s": 9.09,
+      "train_s": 42.16,
+      "peak_gib": 5.82,
+      "step": 147,
+      "minutes": 185.51
+    },
+    {
+      "reward": 0.75,
+      "correct": 0.75,
+      "executed": 0.78125,
+      "executed_wrong": 0.03125,
+      "failures": {
+        "no_such_column": 0.1875,
+        "no_such_table": 0.03125
+      },
+      "zero_var_groups": 0.25,
+      "loss": 0.03923842751603246,
+      "kl": 0.005216471811863764,
+      "completion_tokens": 35.8125,
+      "completion_tokens_p95": 69.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 16.72,
+      "reward_s": 0.01,
+      "ref_s": 5.18,
+      "train_s": 23.58,
+      "peak_gib": 7.03,
+      "step": 148,
+      "minutes": 186.27
+    },
+    {
+      "reward": 0.78125,
+      "correct": 0.78125,
+      "executed": 0.90625,
+      "executed_wrong": 0.125,
+      "failures": {
+        "other": 0.09375
+      },
+      "zero_var_groups": 0.75,
+      "loss": -0.016830997996024166,
+      "kl": 0.003237045392757509,
+      "completion_tokens": 30.75,
+      "completion_tokens_p95": 51.9,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 9.51,
+      "reward_s": 0.01,
+      "ref_s": 3.13,
+      "train_s": 14.16,
+      "peak_gib": 5.64,
+      "step": 149,
+      "minutes": 186.72
+    },
+    {
+      "reward": 0.8125,
+      "correct": 0.8125,
+      "executed": 1.0,
+      "executed_wrong": 0.1875,
+      "failures": {},
+      "zero_var_groups": 0.5,
+      "loss": -0.014500973226319047,
+      "kl": 0.0019457723305682944,
+      "completion_tokens": 24.75,
+      "completion_tokens_p95": 42.0,
+      "truncated": 0.0,
+      "flags": {},
+      "gen_s": 11.77,
+      "reward_s": 0.01,
+      "ref_s": 4.37,
+      "train_s": 20.86,
+      "peak_gib": 6.85,
+      "step": 150,
+      "minutes": 187.34,
+      "val_ex": 0.7
+    }
+  ],
+  "base": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+  "sft_adapter": "/kaggle/input/**/models/sft",
+  "pool": 5301,
+  "skipped": {
+    "gold_failed": 3,
+    "db_empty": 1759,
+    "gold_empty": 161,
+    "too_long": 815
+  },
+  "pool_hardness": {
+    "easy": {
+      "n": 1355,
+      "share": 0.2556
+    },
+    "medium": {
+      "n": 2141,
+      "share": 0.4039
+    },
+    "hard": {
+      "n": 1120,
+      "share": 0.2113
+    },
+    "extra": {
+      "n": 685,
+      "share": 0.1292
+    }
+  },
+  "hardness_weights": null,
+  "max_prompt_tokens": 2048,
+  "val_subset": [
+    "train_spider-58",
+    "train_spider-61",
+    "train_spider-64",
+    "train_spider-65",
+    "train_spider-66",
+    "train_spider-68",
+    "train_spider-70",
+    "train_spider-71",
+    "train_spider-73",
+    "train_spider-79",
+    "train_spider-80",
+    "train_spider-82",
+    "train_spider-83",
+    "train_spider-89",
+    "train_spider-92",
+    "train_spider-95",
+    "train_spider-104",
+    "train_spider-750",
+    "train_spider-752",
+    "train_spider-758",
+    "train_spider-759",
+    "train_spider-760",
+    "train_spider-769",
+    "train_spider-774",
+    "train_spider-779",
+    "train_spider-782",
+    "train_spider-783",
+    "train_spider-784",
+    "train_spider-786",
+    "train_spider-787",
+    "train_spider-788",
+    "train_spider-892",
+    "train_spider-895",
+    "train_spider-896",
+    "train_spider-897",
+    "train_spider-899",
+    "train_spider-905",
+    "train_spider-907",
+    "train_spider-910",
+    "train_spider-915",
+    "train_spider-917",
+    "train_spider-921",
+    "train_spider-925",
+    "train_spider-929",
+    "train_spider-932",
+    "train_spider-2084",
+    "train_spider-2088",
+    "train_spider-2090",
+    "train_spider-2092",
+    "train_spider-2095",
+    "train_spider-2650",
+    "train_spider-2656",
+    "train_spider-2658",
+    "train_spider-2659",
+    "train_spider-3007",
+    "train_spider-3008",
+    "train_spider-3009",
+    "train_spider-3011",
+    "train_spider-3013",
+    "train_spider-3014",
+    "train_spider-3024",
+    "train_spider-3029",
+    "train_spider-3032",
+    "train_spider-3033",
+    "train_spider-3034",
+    "train_spider-3036",
+    "train_spider-3037",
+    "train_spider-3039",
+    "train_spider-3045",
+    "train_spider-3047",
+    "train_spider-3051",
+    "train_spider-3053",
+    "train_spider-3058",
+    "train_spider-3059",
+    "train_spider-3066",
+    "train_spider-3068",
+    "train_spider-3073",
+    "train_spider-3074",
+    "train_spider-3084",
+    "train_spider-3085",
+    "train_spider-4320",
+    "train_spider-4323",
+    "train_spider-4325",
+    "train_spider-4328",
+    "train_spider-4331",
+    "train_spider-4333",
+    "train_spider-4343",
+    "train_spider-4345",
+    "train_spider-4346",
+    "train_spider-4355",
+    "train_spider-4357",
+    "train_spider-4360",
+    "train_spider-4363",
+    "train_spider-4365",
+    "train_spider-4367",
+    "train_spider-4371",
+    "train_spider-4372",
+    "train_spider-4376",
+    "train_spider-4377",
+    "train_spider-4380",
+    "train_spider-4381",
+    "train_spider-4382",
+    "train_spider-4387",
+    "train_spider-4388",
+    "train_spider-4390",
+    "train_spider-5403",
+    "train_spider-5404",
+    "train_spider-5414",
+    "train_spider-5415",
+    "train_spider-5416",
+    "train_spider-5419",
+    "train_spider-5423",
+    "train_spider-5429",
+    "train_spider-5431",
+    "train_spider-5433",
+    "train_spider-5434",
+    "train_spider-5437",
+    "train_spider-5438",
+    "train_spider-5440",
+    "train_spider-5972",
+    "train_spider-5975",
+    "train_spider-5978",
+    "train_spider-5981",
+    "train_spider-5983",
+    "train_spider-5989",
+    "train_spider-5993",
+    "train_spider-5994",
+    "train_spider-5995",
+    "train_spider-5996",
+    "train_spider-5997",
+    "train_spider-5999",
+    "train_spider-6001",
+    "train_spider-6003",
+    "train_spider-6005",
+    "train_spider-6006",
+    "train_spider-6009",
+    "train_spider-6012",
+    "train_spider-6014",
+    "train_spider-6015",
+    "train_spider-6018",
+    "train_spider-6023",
+    "train_spider-6024",
+    "train_spider-6039",
+    "train_spider-6040",
+    "train_spider-6046",
+    "train_spider-6047",
+    "train_spider-6054",
+    "train_spider-6385",
+    "train_spider-6388",
+    "train_spider-6394",
+    "train_spider-6399",
+    "train_spider-6404",
+    "train_spider-6405",
+    "train_spider-6406",
+    "train_spider-6407",
+    "train_spider-6408",
+    "train_spider-6412",
+    "train_spider-6420",
+    "train_spider-6421",
+    "train_spider-6426",
+    "train_spider-6433",
+    "train_spider-6438",
+    "train_spider-6439",
+    "train_spider-6443",
+    "train_spider-6444",
+    "train_spider-6445",
+    "train_spider-6448",
+    "train_spider-6453",
+    "train_spider-6456",
+    "train_spider-6459",
+    "train_spider-6460",
+    "train_spider-6461",
+    "train_spider-6462",
+    "train_spider-6468",
+    "train_spider-6803",
+    "train_spider-6809",
+    "train_spider-6816",
+    "train_spider-6818",
+    "train_spider-6819",
+    "train_spider-6820",
+    "train_spider-6828",
+    "train_spider-6829",
+    "train_spider-6830",
+    "train_spider-6831",
+    "train_spider-6835",
+    "train_spider-6841",
+    "train_spider-6849",
+    "train_spider-6852",
+    "train_spider-6853",
+    "train_spider-6857",
+    "train_spider-6867",
+    "train_spider-6868",
+    "train_spider-6870",
+    "train_spider-6872",
+    "train_spider-6878",
+    "train_spider-6880",
+    "train_spider-6881",
+    "train_spider-6882",
+    "train_spider-6883",
+    "train_spider-6884"
+  ],
+  "device": "cuda",
+  "settings_from": "eval/results/grpo_probe.json",
+  "gradient_checkpointing": true,
+  "lora_dropout": 0.0
+}

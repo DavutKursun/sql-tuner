@@ -252,9 +252,236 @@ within 3 minutes, and Kaggle reported both as complete:
 CI now runs the tests against Kaggle's transformers, the oldest allowed and the latest. Each kernel writes a
 per-command `status.json`, so a crash can no longer pass as "complete".
 
+*Correction:* the message of commit `dd54af8` says the fix was for "Kaggle's transformers 4.x". The kernel log shows
+5.16.1. The fix is right for both, because 5.16.1 slices `logits_to_keep` the old way, but the "4.x" in that message is
+wrong. Pushed history is not rewritten, so the correction lives here.
+
 ## 4. Reinforcement learning with an execution reward (M3)
-The GRPO objective as implemented, step timing on a T4, the run, monitors (zero-variance groups, KL, length,
-executed-but-wrong share), what the policy tried to exploit and what changed in response, the ablation, GRPO vs vote.
+
+**The objective as implemented** (`sqltuner/grpo.py`, by hand). Each step draws 4 prompts and samples G = 8
+completions for each at T 1.0, with no top-k, no top-p and no repetition penalty, so the samples come from exactly the
+distribution whose log-probabilities are trained. Each completion's SQL runs in the safe executor and is rewarded:
+
+- 1 if the result matches the gold result;
+- 0.1 if it runs but returns the wrong result;
+- 0 if there is no SQL, the guard refuses it, or it fails or times out;
+- 0 also for a completion that reaches `max_new_tokens` without its end-of-turn token, whatever it contains.
+
+Advantages are group-normalised, A = (r − mean) / (std + ε), and every token of a completion gets its sample's
+advantage. The loss is the clipped-ratio objective with a k3 KL penalty (β 0.02), averaged over all completion tokens.
+There is one gradient update per batch, so π_old is π_θ detached and the ratio is 1, which costs no extra forward pass.
+
+- *Policy:* the step-200 SFT adapter merged into the base in fp16, with a new LoRA r 16 on every linear layer. Its
+  dropout is 0: sampling runs in eval mode, so dropout in the scored pass would train a different function than the
+  one that sampled.
+- *Reference:* the same network with that LoRA switched off, i.e. the merged SFT model, at no extra memory.
+
+Training uses AdamW at lr 5e-6, gradient clipping 1.0, fp16 + GradScaler on the T4, and gradient checkpointing in the
+policy pass. The prompts of all 300 steps are drawn up front from seed 7 and saved with a hash, so the ablation sees
+the same prompts in the same order.
+
+**Inputs.**
+- *Prompt pool:* train only. Of 8,039 questions, 5,301 remain after dropping:
+  - 3 whose gold query fails;
+  - 1,759 on the empty databases;
+  - 161 whose gold returns no rows, where "return nothing" would be a winning strategy;
+  - 815 prompts over 2,048 tokens.
+
+  Hardness mix: easy 25.6%, medium 40.4%, hard 21.1%, extra 12.9%. The long-schema and empty-database drops remove
+  relatively more extra questions.
+- *Tracking subset:* in-run tracking uses a fixed 200-question val subset (`eval/results/val_subset_ids.json`),
+  stratified by database (4 to 28 per database) with seed 7. Its greedy EX is measured at step 0 and every 50 steps,
+  with the full evaluation's 256-token budget.
+
+**Probe** (`eval/results/grpo_probe.json`): 200 random pool prompts, 8 samples each from the SFT model with the
+training sampler:
+
+| Hardness | n | Mean correct of 8 | 0/8 | 8/8 | Zero-variance groups |
+|---|---:|---:|---:|---:|---:|
+| easy | 45 | 0.872 | 0 | 24 | 53.3% |
+| medium | 84 | 0.683 | 7 | 28 | 41.7% |
+| hard | 43 | 0.555 | 3 | 6 | 20.9% |
+| extra | 28 | 0.500 | 4 | 3 | 25.0% |
+
+37.5% of groups are all-wrong or all-right, below the 50% threshold, so training prompts are drawn **uniformly**.
+Completion lengths are p50 25, p95 78 and p99 115 tokens, so `max_new_tokens` is **128**, which would have cut 0.8% of
+the probe's completions.
+
+**Timing and sizing.** The first timing run crashed at step 2 with a CUDA out-of-memory error. `generate()` copies each
+prompt G times before the prefill, whose attention is quadratic in the prompt length, and 9.8 GiB allocated plus
+2.7 GiB of fragmented reserve left no room for 32 sequences of about 1.7k tokens. Two fixes, neither changing the
+sampled distribution:
+- whole prompt groups are generated in chunks keeping sequences × prompt length² under 8 × 2,048²;
+- the GRPO scripts set `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`.
+
+The rerun of 5 steps measured:
+
+| | Mean | Range |
+|---|---:|---:|
+| Generation s/step | 23.8 | 13.5–37.2 |
+| Reference + policy pass s/step | 41.6 | 16.3–65.9 |
+| Total s/step | 65.4 | 29.8–103.1 |
+| Peak memory | – | ≤ 7.7 GiB |
+| One greedy pass over the 200-question subset | 175 s | – |
+
+Step time is close to linear in the step's longest prompt: 6.9 s + 45.8 s per 1k tokens, fitted on the 5 steps. Those
+5 are the main run's first 5, since the order is seeded. Applied to all 300 planned steps the fit predicts 5.6 h of
+training plus 0.3 h of evals, and 7.3 h if every step is 25% slower. That is under the 8 h budget, so **300 steps at
+G 8, the 2,048-token prompt cap and 128 new tokens** run as specified, with nothing lowered.
+
+**The run** (`eval/results/train_grpo_grpo-main.json`): all 300 steps finished in 6.1 h with no guard stop, at 69 s
+per step and an 8.1 GiB peak.
+
+![GRPO training dynamics](../assets/grpo_dynamics.png)
+
+| Steps | Reward | Correct | Executed | Executed but wrong | Zero-variance groups | KL / token | Tokens mean / p95 | Truncated |
+|---|---:|---:|---:|---:|---:|---:|---|---:|
+| 1–50 | 0.709 | 0.693 | 0.854 | 0.161 | 0.35 | 0.0001 | 34 / 61 | 0.3% |
+| 51–100 | 0.718 | 0.705 | 0.831 | 0.126 | 0.40 | 0.0009 | 33 / 61 | 0.1% |
+| 101–150 | 0.785 | 0.773 | 0.893 | 0.120 | 0.48 | 0.0019 | 31 / 54 | 0.2% |
+| 151–200 | 0.783 | 0.768 | 0.923 | 0.155 | 0.51 | 0.0043 | 31 / 53 | 0.3% |
+| 201–250 | 0.810 | 0.797 | 0.926 | 0.129 | 0.63 | 0.0087 | 30 / 56 | 0.3% |
+| 251–300 | 0.809 | 0.796 | 0.932 | 0.136 | 0.67 | 0.0118 | 32 / 57 | 0.3% |
+
+Shares of the 32 completions per step, averaged over each window.
+
+| Execution failures | 1–50 | 101–150 | 251–300 |
+|---|---:|---:|---:|
+| no such column | 10.8% | 8.0% | 5.3% |
+| no such table | 1.4% | 0.9% | 0.4% |
+| syntax | 1.0% | 0.6% | 0.6% |
+| other SQLite | 1.2% | 1.0% | 0.3% |
+| guard / timeout / no SQL | 0 | < 0.1% | 0 |
+
+The policy learned what the M2 error analysis asked for: "no such column", the missing-join failure, halves. Correct
+completions rise from 69% to 80%. The executed-but-wrong share does not grow (16% → 14%), so the 0.1 bonus for running
+SQL did not pull the policy toward safe wrong queries. Two costs show:
+- zero-variance groups climb from 35% to 67%: as the policy gets more prompts 8/8 right, fewer groups carry gradient;
+- KL to the SFT model grows steadily, to about 0.012 per token.
+
+Completions get slightly shorter (34 → 32 tokens). Truncation stays at about 0.3%.
+
+**Choosing the checkpoint.** Greedy EX on the 200-question val subset, by step:
+
+| Step | 0 (SFT) | 50 | 100 | 150 | 200 | 250 | 300 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| exec bonus 0.1 (main) | 70.5 | 70.0 | 70.5 | 71.5 | 72.5 | 74.0 | **75.0** |
+| exec bonus 0 (ablation) | 70.5 | 71.0 | 71.0 | 70.0 | | | |
+
+![Val-subset EX by step](../assets/grpo_val_ex.png)
+
+The rule (highest subset EX, a tie going to the earlier step) picks **step 300**. Two caveats:
+- the subset is part of val, so the full-val numbers below are slightly optimistic for the chosen checkpoint, and dev
+  (M4) is the clean number;
+- EX was still rising at step 300, so a longer run might help.
+
+On the subset, step 300 − step 0 is +4.5 [+0.5, +8.5] by question and [+2.6, +6.9] by database. As a sanity check,
+step 0 (the SFT adapter merged into the base in fp16) reproduces M2's unmerged SFT on the subset: 70.5% both ways,
+198 of 200 identical queries, no question graded differently.
+
+**Full val** (620 questions, 11 databases; T4, fp16, batch 8; latency per question, amortised):
+
+| Model | EX | ex_nonempty_gold | CI by question | CI by database | Executed | p50 latency |
+|---|---:|---:|---|---|---:|---:|
+| Base, zero-shot | 69.4 | 69.6 | [65.8, 72.7] | [57.5, 79.0] | 84.4 | 0.44 s |
+| SFT, greedy | 74.0 | 73.7 | [70.5, 77.4] | [66.4, 80.8] | 91.9 | 0.77 s |
+| SFT, vote-8 | 78.7 | 78.4 | [75.5, 81.9] | [72.2, 84.8] | 98.5 | 3.41 s |
+| **GRPO, greedy** | **78.2** | 77.9 | [74.8, 81.5] | [72.0, 84.1] | 93.9 | 0.79 s |
+| **GRPO, vote-8** | **79.7** | 79.5 | [76.5, 82.9] | [74.0, 84.8] | 97.9 | 3.24 s |
+| Claude Haiku 5.5, 3-shot | 85.0 | 85.2 | [82.3, 87.7] | [80.4, 89.4] | 99.5 | 0.90 s |
+
+| Paired (same 620 questions) | Difference | CI by question | CI by database |
+|---|---:|---|---|
+| GRPO − SFT (greedy) | +4.2 | [+2.4, +6.1] | [+2.4, +6.8] |
+| GRPO vote-8 − SFT vote-8 | +1.0 | [−1.3, +3.2] | [−1.4, +2.9] |
+| GRPO greedy − SFT vote-8 | −0.5 | [−2.7, +1.6] | [−1.7, +0.6] |
+| GRPO vote-8 − GRPO greedy | +1.5 | [−0.0, +2.9] | [−0.2, +2.8] |
+| GRPO vote-8 − Haiku 3-shot | −5.3 | [−8.2, −2.4] | [−7.6, −2.6] |
+
+GRPO beats SFT at both levels, the database-level CI included: 32 questions fixed, 6 broken. **One greedy GRPO answer
+is as good as SFT's majority vote over 8 samples** (−0.5, CI across 0), at an eighth of the generation. Voting
+helps much less after RL (+1.5, not significant) than after SFT (+4.7). RL has folded into the greedy answer much of
+what voting used to recover, which is the usual "sharpening" effect of GRPO. Claude Haiku stays ahead by 5–7 points.
+
+| Hardness | n | Base | SFT | GRPO | SFT vote-8 | GRPO vote-8 | Haiku 3-shot |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| easy | 150 | 86.0 | 82.0 | **86.0** | 83.3 | 86.7 | 90.7 |
+| medium | 223 | 70.4 | 73.5 | 78.5 | 80.7 | 78.9 | 85.2 |
+| hard | 144 | 66.0 | 75.7 | 79.2 | 79.2 | 80.6 | 86.8 |
+| extra | 103 | 47.6 | 61.2 | 65.0 | 67.0 | 69.9 | 73.8 |
+
+The 4 easy points SFT lost come back (82.0 → 86.0, the base model's level). The execution reward undoes the template
+prior SFT had learned, such as `count(*)` where `SUM` or `DISTINCT` was right, and keeps SFT's gains on harder
+questions.
+
+**M2's 30 categorised SFT failures:** GRPO fixes 7.
+
+| Category | Fixed |
+|---|---:|
+| wrong join path | 3 of 11 |
+| wrong table / column | 3 of 7 |
+| other (duplicate rows) | 1 of 1 |
+| aggregation / grouping | 0 of 3 |
+| wrong value or literal | 0 of 2 |
+| question ambiguous | 0 of 4 |
+| gold arguably wrong | 0 of 2 |
+
+None of the data problems moves, as expected. There is no new failure type. The 6 questions GRPO breaks are the same
+kinds (4 join-path misses, 1 wrong table, 1 aggregate over the wrong thing), and eval-time patterns do not grow:
+
+| Pattern (val, greedy) | SFT | GRPO |
+|---|---:|---:|
+| LIMIT not in gold | 3 | 3 |
+| SELECT * not in gold | 1 | 1 |
+| empty result where the gold has rows | 15 | 9 |
+| unknown column | 44 | 33 |
+| executed but wrong | 111 | 97 |
+
+**Ablation: exec bonus 0 vs 0.1** (reward 1 / 0 / 0; same seed, settings, and the same 150 prompt batches, verified
+equal):
+- *Val subset at step 150:* the bonus run is ahead by +1.5, CI by question [−1.0, +4.0], by database [+0.0, +2.9]:
+  not a demonstrated difference.
+- *Behaviour over steps 1–150:* the same with or without the bonus. Correct share 0.724 vs 0.727, executed 0.859 vs
+  0.858, executed but wrong 0.135 vs 0.131, execution failures 0.139 vs 0.141.
+- *What the bonus does buy:* reward variance. 41% of groups are zero-variance with it and 51% without, because a group
+  where nothing is right but some queries run still has a gradient. That is more signal per step, at no measurable
+  cost in executed-but-wrong queries.
+
+**What the policy tried to exploit.** Each flag is logged per step (its share of the 32 completions), and up to 6
+real completions per flag are kept (`examples` in the run log):
+
+| Flag | Mean share | Steps where it appears | 1–50 → 251–300 |
+|---|---:|---:|---|
+| empty result (gold has rows) | 2.3% | 104 / 300 | 3.6% → 1.8% |
+| LIMIT not in gold | 1.1% | 25 / 300 | 1.8% → 0.5% |
+| SELECT * not in gold | 0.2% | 11 / 300 | 0.3% → 0 |
+| row cap (200k rows) | 0 | 0 / 300 | 0 → 0 |
+| row flood (> 10× the gold rows) | 0.3% | 13 / 300 | 0.6% → 0 |
+| truncated (no end token in 128) | 0.2% | 12 / 300 | 0.3% → 0.3% |
+
+None of them paid more than the 0.1 bonus unless the rows were right, and every flag falls as training goes on:
+- **Empty result.** `ship_1`: `… WHERE class = "Armed Schooner"` (the data says "Armed schooner") returns nothing and
+  earned 0.1. `flight_1`: `SELECT count(*) … > 1000 INTERSECT SELECT count(*) … < 5000` is empty and earned 0.1.
+  Returning nothing cannot win, because no pool prompt has an empty gold result: the 161 gold-empty prompts and the 7
+  empty databases were dropped before training (Step 1). That is the reward-hacking fix this run made, and it was made
+  up front.
+- **LIMIT not in gold.** `dorm_1`: `… WHERE dormid = (SELECT dormid FROM dorm ORDER BY student_capacity DESC LIMIT 1)`
+  returns the gold's rows (the gold uses `= (SELECT max(student_capacity) …)`) and was paid 1.0. That is legitimate on
+  data without ties; with ties the two would differ and the reward would notice. The variant `… GROUP BY stuid ORDER
+  BY count(*) DESC LIMIT 1` is wrong and earned 0.1.
+- **SELECT \*.** `cre_Theme_park`: `SELECT * FROM HOTELS ORDER BY price_range LIMIT 3` and `restaurant_1`: `SELECT *
+  FROM Student WHERE age > 18 AND major = 600` both earned 0.1. A result only matches when it has exactly the gold's
+  columns, so extra columns never pay.
+- **Row flood.** `inn_1`: joining `Reservations` multiplies each room; `driving_school`: `UNION` where the question
+  asks for `INTERSECT`. Both earned 0.1. More rows can never equal the gold's multiset.
+- **Truncated.** Long four-table joins (`entrepreneur`, `city_record`) cut at 128 tokens earned 0 by design.
+- **Row cap.** Never reached.
+
+Nothing in the reward or the data was changed after the run started.
+
+**Compute.** Kaggle T4 this week: M1 0.6 h, M2 5.5 h (including two 3-minute failed starts), M3 10.9 h (probe 0.4,
+timing 0.2, main run 6.2, ablation with the full-val evaluations 4.1); about **17.0 GPU-hours** of the 30-hour weekly
+quota. HF Jobs was not used: the Hub token lacks the `job.write` permission, so its smoke test was refused twice.
 
 ## 5. Final results (M4) — dev read once on _(date)_
 

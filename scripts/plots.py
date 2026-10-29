@@ -170,11 +170,12 @@ def grpo_val(main_log: Path, ablation_log: Path | None, out: Path, chosen: int |
         xs, ys = [e["step"] for e in info["evals"]], [100 * e["val_ex"] for e in info["evals"]]
         ax.plot(xs, ys, color=SLOT[k], linewidth=2, marker="o", markersize=8, markerfacecolor=SLOT[k], markeredgecolor=SURFACE, markeredgewidth=2,
                 solid_capstyle="round", label=label, zorder=3)
-        ax.annotate(f"{ys[-1]:.1f}", xy=(xs[-1], ys[-1]), xytext=(8, 0), textcoords="offset points", va="center", color=INK_2, fontsize=9)
-    if chosen is not None:
+        end = f"{ys[-1]:.1f}" + (", chosen" if k == 0 and chosen == xs[-1] else "")
+        ax.annotate(end, xy=(xs[-1], ys[-1]), xytext=(8, 0), textcoords="offset points", va="center", color=INK_2, fontsize=9)
+    if chosen is not None and chosen != runs[0][1]["evals"][-1]["step"]:
         e = next(e for e in runs[0][1]["evals"] if e["step"] == chosen)
-        ax.annotate(f"chosen: step {chosen}, {100 * e['val_ex']:.1f}%", xy=(chosen, 100 * e["val_ex"]), xytext=(0, 26), textcoords="offset points",
-                    ha="center", color=INK_2, fontsize=9, arrowprops={"arrowstyle": "-", "color": MUTED, "linewidth": 1, "shrinkB": 6})
+        ax.annotate(f"chosen: step {chosen}, {100 * e['val_ex']:.1f}%", xy=(chosen, 100 * e["val_ex"]), xytext=(-18, -34), textcoords="offset points",
+                    ha="right", va="top", color=INK_2, fontsize=9, arrowprops={"arrowstyle": "-", "color": MUTED, "linewidth": 1, "shrinkB": 6})
     n = len(runs[0][1].get("val_subset", [])) or 200
     ax.set_xlabel("optimiser step", color=INK_2, fontsize=10)
     ax.set_ylabel("greedy EX on the val subset (%)", color=INK_2, fontsize=10)

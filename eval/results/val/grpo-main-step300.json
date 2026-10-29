@@ -1,0 +1,126 @@
+{
+  "accuracy": {
+    "ex": 0.782258064516129,
+    "ci_case": [
+      0.7483870967741936,
+      0.8145161290322581
+    ],
+    "ci_db": [
+      0.7202235689687899,
+      0.840699715975281
+    ],
+    "n": 620,
+    "n_db": 11
+  },
+  "ex_nonempty_gold": {
+    "ex": 0.778702163061564,
+    "ci_case": [
+      0.7470465890183028,
+      0.8103577371048252
+    ],
+    "ci_db": [
+      0.7185306483061175,
+      0.8366577104754634
+    ],
+    "n": 601,
+    "n_db": 11
+  },
+  "by_hardness": {
+    "easy": {
+      "n": 150,
+      "ex": 0.86
+    },
+    "medium": {
+      "n": 223,
+      "ex": 0.7847533632286996
+    },
+    "hard": {
+      "n": 144,
+      "ex": 0.7916666666666666
+    },
+    "extra": {
+      "n": 103,
+      "ex": 0.6504854368932039
+    }
+  },
+  "executed_rate": 0.9387096774193548,
+  "no_sql_rate": 0.0,
+  "errors": {
+    "unknown column": 33,
+    "sqlite: ORDER BY clause": 2,
+    "misused aggregate": 1,
+    "syntax error": 1,
+    "sqlite: parser stack overflow": 1
+  },
+  "by_database": {
+    "cre_Docs_and_Epenses": {
+      "n": 84,
+      "ex": 0.9047619047619048
+    },
+    "flight_4": {
+      "n": 82,
+      "ex": 0.7073170731707317
+    },
+    "game_1": {
+      "n": 86,
+      "ex": 0.8023255813953488
+    },
+    "insurance_fnol": {
+      "n": 42,
+      "ex": 0.7380952380952381
+    },
+    "loan_1": {
+      "n": 80,
+      "ex": 0.8375
+    },
+    "local_govt_mdm": {
+      "n": 14,
+      "ex": 0.5714285714285714
+    },
+    "pilot_record": {
+      "n": 15,
+      "ex": 0.8
+    },
+    "race_track": {
+      "n": 42,
+      "ex": 1.0
+    },
+    "shop_membership": {
+      "n": 44,
+      "ex": 0.75
+    },
+    "student_assessment": {
+      "n": 53,
+      "ex": 0.6792452830188679
+    },
+    "tracking_grants_for_research": {
+      "n": 78,
+      "ex": 0.6794871794871795
+    }
+  },
+  "usage": {
+    "calls": 620,
+    "prompt_tokens": 550709,
+    "completion_tokens": 20226,
+    "cost_usd": 0.0,
+    "cost_per_1000_questions_usd": 0.0,
+    "latency_ms_p50": 792.964226125008,
+    "latency_ms_p95": 1515.6183754999972
+  },
+  "backend": "hf:Qwen/Qwen2.5-Coder-1.5B-Instruct",
+  "adapter": "/kaggle/input/**/models/grpo-main/step_300",
+  "merge_adapter": "/kaggle/input/**/models/sft",
+  "split": "val",
+  "tag": "grpo-main-step300",
+  "few_shot": 0,
+  "samples": 1,
+  "sample_rows": 3,
+  "limit": 0,
+  "run_date": "2026-10-29",
+  "minutes": 9.13,
+  "thinking": null,
+  "stopped_early": false,
+  "device": "cuda",
+  "batch_size": 8,
+  "hardware": "Kaggle Tesla T4, fp16"
+}
