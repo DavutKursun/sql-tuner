@@ -62,6 +62,7 @@ def main(argv=None, backend_override=None) -> int:
     ap.add_argument("--batch-size", type=int, default=8)
     ap.add_argument("--max-usd", type=float, default=5.0)
     ap.add_argument("--tag", default=None)
+    ap.add_argument("--seed", type=int, default=SEED, help="seeds the sampler (vote-8) before generation")
     ap.add_argument("--raw", type=Path, default=RAW)
     ap.add_argument("--splits-dir", type=Path, default=SPLITS)
     ap.add_argument("--out", type=Path, default=RESULTS)
@@ -92,13 +93,17 @@ def main(argv=None, backend_override=None) -> int:
         backend = GoldBackend([e.query for e in examples])
     else:
         backend = make_backend(a.backend, find_adapter(a.adapter), a.device, a.max_usd, a.batch_size, merge=find_adapter(a.merge_adapter))
+    if a.backend.startswith("hf:"):
+        import torch
+
+        torch.manual_seed(a.seed)  # the vote-8 draw is reproducible; greedy decoding does not use it
     t = time.time()
     preds, usage = evaluate(examples, backend, sd, rules, shots, a.samples, max_new_tokens=a.max_new_tokens)
     tag = tag_for(a)
     out_dir = a.out / a.split
     write_predictions(preds, out_dir / f"{tag}.jsonl")
     summary = summarize(preds, usage, {"backend": a.backend, "adapter": a.adapter, "merge_adapter": a.merge_adapter, "split": a.split, "tag": tag, "few_shot": a.few_shot, "samples": a.samples,
-                                       "sample_rows": a.sample_rows, "limit": a.limit, "run_date": str(date.today()), "minutes": round((time.time() - t) / 60, 2),
+                                       "sample_rows": a.sample_rows, "limit": a.limit, "run_date": str(date.today()), "seed": a.seed, "minutes": round((time.time() - t) / 60, 2),
                                        "thinking": getattr(backend, "thinking", None), "stopped_early": len(preds) < len(examples),
                                        "device": getattr(backend, "device", None), "batch_size": a.batch_size if a.backend.startswith("hf:") else None})
     (out_dir / f"{tag}.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")

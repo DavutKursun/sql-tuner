@@ -118,6 +118,41 @@ self-hosted deployment. This is the most asked-about topic in ML interviews righ
 - **Every model inference and every training run happens in a Kaggle kernel** (GPU T4, internet on, private). The Mac
   only runs Claude Code, git, the Claude API baselines, tests with the tiny model, and light scripts (hardness check,
   tokenizer lengths, summaries).
+- **Final read (M4) — frozen before any dev or test call** (2026-10-30). Models, prompts, decoding, checkpoints and API
+  model ids as of `7ce3230`. The freeze commit adds only this entry, the kernels below, the `--seed` flag (vote-8
+  sampling is seeded with 7; the val vote-8 runs were unseeded) and its test. Dev and test are each read once. Nothing
+  is chosen, tuned or rerun because of a dev or test number. A rerun only after a crash or an infrastructure failure,
+  named, keeping the first output. "Best of ours" for the Claude comparisons is fixed by val: GRPO vote-8 (79.7%).
+  - SFT adapter: step 200 of 996. Kaggle `davutkursun/sql-tuner-sft` output `models/sft` = Hub
+    `DavutKursun/sql-tuner-sft` @ `e48f343ccf295b00cf9e65d6fb4e76e1d9d5eb62`, `adapter_model.safetensors` sha256
+    `5f2ef882e24e6687e3e8d2ca89d75996a87c06a43c04a34625c1d8dc63e3dea7`.
+  - GRPO adapter: step 300 of 300, on the merged SFT model. Kaggle `davutkursun/sql-tuner-grpo-main` output
+    `models/grpo-main/step_300` = Hub `DavutKursun/sql-tuner-grpo` @ `f3465f73747cc38761660664af60a514d8fe6dd3`, sha256
+    `dc6e27fa02ed0ee03db179d55482eb7b440469df13e2b9dce3794033d41c68cf`.
+  - Decoding:
+    - greedy: 256 new tokens, batch 8;
+    - vote-8: 8 samples at T 0.7 (no top-k / top-p / repetition penalty), majority vote on execution results, batch 4,
+      seed 7.
+
+    Prompt as on val (system + `CREATE TABLE` + 3 example rows per table + question). The 3-shot rows use the same 3
+    training examples as Claude (`few_shot_pool`, seed 7).
+  - API: `claude-haiku-5-5` (thinking `disabled`) and `claude-sonnet-5-5` (thinking `between_tools`), 3-shot. Estimates
+    from M1's spend per question: Haiku $0.19 dev / $0.40 test, Sonnet $3.85 dev (≤ $8, so all of dev). Caps: Haiku
+    dev `--max-usd 5`, Sonnet dev `--max-usd 8`, Haiku test `--max-usd 5`. Sonnet does not run on test.
+  - Commands. Kaggle kernels `kaggle/final-dev` and `kaggle/final-test` (T4) run, in this order, `python
+    scripts/eval_model.py --backend hf:Qwen/Qwen2.5-Coder-1.5B-Instruct --split {dev|test} --final` with:
+    - `--tag Qwen2.5-Coder-1.5B-Instruct`
+    - `--adapter "/kaggle/input/**/models/sft" --tag Qwen2.5-Coder-1.5B-Instruct-sft`
+    - `--merge-adapter "/kaggle/input/**/models/sft" --adapter "/kaggle/input/**/models/grpo-main/step_300" --tag
+      grpo-main-step300`
+    - `--few-shot 3 --tag Qwen2.5-Coder-1.5B-Instruct-3shot`
+    - the GRPO pair with `--samples 8 --batch-size 4 --tag grpo-main-step300-vote8`
+    - the SFT adapter with `--samples 8 --batch-size 4 --tag Qwen2.5-Coder-1.5B-Instruct-sft-vote8`
+
+    `final-dev` first fills the val row `--split val --few-shot 3`. On the Mac:
+    - `python scripts/eval_model.py --backend anthropic:claude-haiku-5-5 --split dev --final --few-shot 3 --max-usd 5`
+    - the same with `anthropic:claude-sonnet-5-5 … --max-usd 8`
+    - `anthropic:claude-haiku-5-5 --split test … --max-usd 5`
 
 ## 3. Data
 

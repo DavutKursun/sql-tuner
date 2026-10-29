@@ -114,6 +114,14 @@ def test_grpo_skip_reasons():
     assert train_grpo.skip_reason(ex(db_empty=True), replace(GRPO, skip_db_empty=False)) is None
 
 
+def test_vote_is_seeded_and_few_shot_works_locally(ws, tmp_path):
+    args = ["--backend", f"hf:{ws['tiny']}", "--split", "val", "--limit", "4", "--device", "cpu", "--max-new-tokens", "6", "--samples", "3",
+            "--few-shot", "1", "--tag", "t", *common(ws)]
+    assert eval_model.main([*args, "--out", str(tmp_path / "a")]) == 0 and eval_model.main([*args, "--out", str(tmp_path / "b")]) == 0
+    first, second = ((tmp_path / d / "val" / "t.jsonl").read_text() for d in ("a", "b"))
+    assert first == second and json.loads((tmp_path / "a" / "val" / "t.json").read_text())["seed"] == 7  # same seed, same vote
+
+
 def test_grpo_probe_and_inputs(ws, tmp_path):
     from grpo_probe import decide
 

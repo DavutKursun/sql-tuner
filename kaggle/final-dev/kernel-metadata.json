@@ -1,0 +1,17 @@
+{
+  "id": "davutkursun/sql-tuner-final-dev",
+  "title": "sql-tuner-final-dev",
+  "code_file": "sql-tuner-final-dev.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "dataset_sources": [],
+  "competition_sources": [],
+  "kernel_sources": [
+    "davutkursun/sql-tuner-sft",
+    "davutkursun/sql-tuner-grpo-main"
+  ],
+  "model_sources": []
+}
