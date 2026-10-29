@@ -43,7 +43,11 @@ class Samples:
     truncated: np.ndarray | None = None  # (N,) no end-of-turn token within max_new_tokens
 
 
-def sample_groups(model, tok, prompts: list[str], G: int, temperature: float, max_new_tokens: int, device) -> Samples:
+def sample_groups(model, tok, prompts: list[str], G: int, temperature: float, max_new_tokens: int, device, max_cells: int = 8 * 2048**2) -> Samples:
+    """G completions per prompt. generate() copies each prompt G times before the prefill, whose attention is quadratic in
+    the prompt length, so whole prompt groups are generated in chunks keeping sequences x prompt_length² under `max_cells`
+    (a T4 ran out of memory prefilling 32 sequences of ~1.7k tokens at once). Every chunk is a slice of the same
+    left-padded batch, so prompts are tokenised and positioned exactly as in a single call."""
     import torch
 
     from .generate import sampling_kwargs
@@ -51,12 +55,19 @@ def sample_groups(model, tok, prompts: list[str], G: int, temperature: float, ma
     model.eval()
     tok.padding_side = "left"
     enc = tok(prompts, return_tensors="pt", padding=True, add_special_tokens=False).to(device)
-    with torch.no_grad():  # plain sampling at `temperature` (no top-k / top-p / repetition penalty): token_logprobs scores the same distribution
-        out = model.generate(input_ids=enc["input_ids"], attention_mask=enc["attention_mask"], **sampling_kwargs(temperature), max_new_tokens=max_new_tokens,
-                             num_return_sequences=G,
-                             pad_token_id=tok.pad_token_id, eos_token_id=tok.eos_token_id)
     P = enc["input_ids"].shape[1]
-    comp = out[:, P:]
+    per_chunk = max(1, max_cells // (G * P * P))
+    parts = []
+    with torch.no_grad():  # plain sampling at `temperature` (no top-k / top-p / repetition penalty): token_logprobs scores the same distribution
+        for c in range(0, len(prompts), per_chunk):
+            out = model.generate(input_ids=enc["input_ids"][c : c + per_chunk], attention_mask=enc["attention_mask"][c : c + per_chunk],
+                                 **sampling_kwargs(temperature), max_new_tokens=max_new_tokens, num_return_sequences=G, pad_token_id=tok.pad_token_id,
+                                 eos_token_id=tok.eos_token_id)
+            parts.append(out[:, P:])
+    if device == "cuda":
+        torch.cuda.empty_cache()
+    width = max(p.shape[1] for p in parts)
+    comp = torch.cat([torch.nn.functional.pad(p, (0, width - p.shape[1]), value=tok.pad_token_id) for p in parts])
     eos = tok.eos_token_id
     # keep tokens up to and including the first EOS; everything after is padding
     is_eos = comp == eos
@@ -194,6 +205,8 @@ def grpo_step(model, tok, prompts: list[str], reward_fn: Callable[[int, str], tu
         scaler.step(opt)
         scaler.update()
     t_train = time.perf_counter() - t2
+    if cuda:
+        torch.cuda.empty_cache()
     lengths = s.comp_mask.sum(1).cpu().numpy()
     correct = np.array([bool(i.get("correct")) for _, i in infos])
     executed = np.array([bool(i.get("executed")) for _, i in infos])

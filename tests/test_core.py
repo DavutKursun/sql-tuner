@@ -313,6 +313,21 @@ def test_grpo_step_truncation_and_monitors(tiny):
     assert abs(st["reward"] - (1 - st["truncated"])) < 1e-9 and abs(st["correct"] - (1 - st["truncated"])) < 1e-9
 
 
+def test_sampling_in_chunks_keeps_the_layout(tiny):
+    import torch
+
+    from sqltuner.grpo import sample_groups
+
+    tok, model = _tiny_policy(tiny)
+    prompts = [apply_chat_template(tok, [{"role": "user", "content": c}]) for c in ("Question one two three four five", "Q")]
+    torch.manual_seed(0)
+    s = sample_groups(model, tok, prompts, 3, 1.0, 6, "cpu", max_cells=1)  # forces one prompt per generate call
+    P = s.seq.shape[1] - s.C
+    assert s.seq.shape[0] == 6 and list(s.group) == [0, 0, 0, 1, 1, 1] and len(s.texts) == 6 and len(s.truncated) == 6
+    assert torch.equal(s.seq[3:, :P], s.seq[3:4, :P].expand(3, -1))  # the short prompt keeps the batch's left padding
+    assert all(int(s.comp_mask[i].sum()) <= s.C and bool(s.truncated[i]) == (int(s.comp_mask[i].sum()) == 6) for i in range(6))
+
+
 def test_train_grpo_checkpoints_evals_and_guard(tiny, tmp_path):
     import torch
 

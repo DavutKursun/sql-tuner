@@ -122,9 +122,81 @@ def hardness(a: Path, a_label: str, b: Path, b_label: str, out: Path) -> None:
     plt.close(fig)
 
 
+def _rolling(values, window: int = 10):
+    out, acc = [], []
+    for v in values:
+        acc.append(v)
+        acc = acc[-window:]
+        out.append(sum(acc) / len(acc))
+    return out
+
+
+def grpo_dynamics(log_path: Path, out: Path) -> None:
+    """Small multiples, one measure per panel on its own scale (never two y-axes on one plot): faint per-step values,
+    a 10-step rolling mean on top."""
+    info = json.loads(log_path.read_text())
+    h = info["history"]
+    steps = [r["step"] for r in h]
+    panels = [("reward (mean of 32 completions)", [r["reward"] for r in h], None), ("correct share", [r["correct"] for r in h], None),
+              ("KL to the SFT model, per token", [r["kl"] for r in h], None),
+              ("completion tokens", [r["completion_tokens"] for r in h], [r.get("completion_tokens_p95", r["completion_tokens"]) for r in h]),
+              ("zero-variance groups (share)", [r["zero_var_groups"] for r in h], None)]
+    fig, axes = plt.subplots(len(panels), 1, figsize=(8, 9.5), dpi=DPI, sharex=True)
+    for ax, (label, vals, p95) in zip(axes, panels):
+        _style(ax, fig)
+        ax.plot(steps, vals, color=SLOT[0], linewidth=1, alpha=0.25, zorder=2)
+        ax.plot(steps, _rolling(vals), color=SLOT[0], linewidth=2, solid_capstyle="round", label="mean" if p95 else None, zorder=3)
+        if p95:
+            ax.plot(steps, p95, color=SLOT[1], linewidth=1, alpha=0.25, zorder=2)
+            ax.plot(steps, _rolling(p95), color=SLOT[1], linewidth=2, solid_capstyle="round", label="p95", zorder=3)
+            ax.legend(frameon=False, fontsize=8, loc="upper right", labelcolor=INK_2, ncols=2)
+        ax.set_title(label, color=INK_2, fontsize=9, loc="left", pad=4)
+        ax.tick_params(labelsize=8)
+    axes[-1].set_xlabel("optimiser step", color=INK_2, fontsize=10)
+    fig.suptitle(f"GRPO training dynamics ({info['steps']} steps; faint: each step, line: 10-step mean)", color=INK, fontsize=11, x=0.02, ha="left")
+    fig.tight_layout()
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out, facecolor=SURFACE)
+    plt.close(fig)
+
+
+def grpo_val(main_log: Path, ablation_log: Path | None, out: Path, chosen: int | None = None) -> None:
+    runs = [("exec bonus 0.1 (main)", json.loads(main_log.read_text()))]
+    if ablation_log:
+        runs.append(("exec bonus 0 (ablation)", json.loads(ablation_log.read_text())))
+    fig, ax = plt.subplots(figsize=(8, 4.2), dpi=DPI)
+    _style(ax, fig)
+    for k, (label, info) in enumerate(runs):
+        xs, ys = [e["step"] for e in info["evals"]], [100 * e["val_ex"] for e in info["evals"]]
+        ax.plot(xs, ys, color=SLOT[k], linewidth=2, marker="o", markersize=8, markerfacecolor=SLOT[k], markeredgecolor=SURFACE, markeredgewidth=2,
+                solid_capstyle="round", label=label, zorder=3)
+        ax.annotate(f"{ys[-1]:.1f}", xy=(xs[-1], ys[-1]), xytext=(8, 0), textcoords="offset points", va="center", color=INK_2, fontsize=9)
+    if chosen is not None:
+        e = next(e for e in runs[0][1]["evals"] if e["step"] == chosen)
+        ax.annotate(f"chosen: step {chosen}, {100 * e['val_ex']:.1f}%", xy=(chosen, 100 * e["val_ex"]), xytext=(0, 26), textcoords="offset points",
+                    ha="center", color=INK_2, fontsize=9, arrowprops={"arrowstyle": "-", "color": MUTED, "linewidth": 1, "shrinkB": 6})
+    n = len(runs[0][1].get("val_subset", [])) or 200
+    ax.set_xlabel("optimiser step", color=INK_2, fontsize=10)
+    ax.set_ylabel("greedy EX on the val subset (%)", color=INK_2, fontsize=10)
+    ax.set_title(f"GRPO: execution accuracy on the fixed {n}-question val subset by step (step 0 = SFT)", color=INK, fontsize=11, loc="left", pad=12)
+    ax.legend(frameon=False, fontsize=9, loc="lower right", labelcolor=INK_2)
+    fig.tight_layout()
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out, facecolor=SURFACE)
+    plt.close(fig)
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="what", required=True)
+    g = sub.add_parser("grpo-dynamics")
+    g.add_argument("--log", type=Path, required=True)
+    g.add_argument("--out", type=Path, required=True)
+    v = sub.add_parser("grpo-val")
+    v.add_argument("--main", type=Path, required=True)
+    v.add_argument("--ablation", type=Path, default=None)
+    v.add_argument("--chosen", type=int, default=None)
+    v.add_argument("--out", type=Path, required=True)
     c = sub.add_parser("sft-curve")
     c.add_argument("--log", type=Path, required=True)
     c.add_argument("--out", type=Path, required=True)
@@ -137,6 +209,10 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
     if a.what == "sft-curve":
         sft_curve(a.log, a.out)
+    elif a.what == "grpo-dynamics":
+        grpo_dynamics(a.log, a.out)
+    elif a.what == "grpo-val":
+        grpo_val(a.main, a.ablation, a.out, a.chosen)
     else:
         hardness(a.a, a.a_label, a.b, a.b_label, a.out)
     print(a.out)

@@ -1,0 +1,1300 @@
+{
+ "prompts": 200,
+ "samples": 8,
+ "temperature": 1.0,
+ "top_k": 0,
+ "top_p": 1.0,
+ "probe_max_new_tokens": 256,
+ "pool": 5301,
+ "skipped": {
+  "gold_failed": 3,
+  "db_empty": 1759,
+  "gold_empty": 161,
+  "too_long": 815
+ },
+ "zero_variance_share": 0.375,
+ "by_hardness": {
+  "easy": {
+   "n": 45,
+   "correct_of_G": {
+    "0": 0,
+    "1": 1,
+    "2": 1,
+    "3": 0,
+    "4": 2,
+    "5": 2,
+    "6": 4,
+    "7": 11,
+    "8": 24
+   },
+   "correct_rate": 0.8722,
+   "zero_variance_share": 0.5333,
+   "mixed": 21
+  },
+  "medium": {
+   "n": 84,
+   "correct_of_G": {
+    "0": 7,
+    "1": 3,
+    "2": 8,
+    "3": 3,
+    "4": 5,
+    "5": 8,
+    "6": 7,
+    "7": 15,
+    "8": 28
+   },
+   "correct_rate": 0.683,
+   "zero_variance_share": 0.4167,
+   "mixed": 49
+  },
+  "hard": {
+   "n": 43,
+   "correct_of_G": {
+    "0": 3,
+    "1": 2,
+    "2": 5,
+    "3": 6,
+    "4": 6,
+    "5": 5,
+    "6": 6,
+    "7": 4,
+    "8": 6
+   },
+   "correct_rate": 0.5552,
+   "zero_variance_share": 0.2093,
+   "mixed": 34
+  },
+  "extra": {
+   "n": 28,
+   "correct_of_G": {
+    "0": 4,
+    "1": 3,
+    "2": 3,
+    "3": 1,
+    "4": 4,
+    "5": 3,
+    "6": 4,
+    "7": 3,
+    "8": 3
+   },
+   "correct_rate": 0.5,
+   "zero_variance_share": 0.25,
+   "mixed": 21
+  }
+ },
+ "decision": "uniform",
+ "hardness_weights": null,
+ "lengths": {
+  "p50": 25.0,
+  "p95": 78.0,
+  "p99": 115.00999999999999,
+  "max": 256,
+  "truncated_at_probe_cap": 0.0006
+ },
+ "max_new_tokens": 128,
+ "would_truncate_at_max_new_tokens": 0.0081,
+ "seconds": 1075.2,
+ "per_prompt": [
+  {
+   "id": "train_spider-2396",
+   "hardness": "hard",
+   "correct": 7,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-273",
+   "hardness": "medium",
+   "correct": 0,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-215",
+   "hardness": "easy",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-2675",
+   "hardness": "hard",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-2800",
+   "hardness": "extra",
+   "correct": 4,
+   "executed": 4
+  },
+  {
+   "id": "train_spider-6113",
+   "hardness": "hard",
+   "correct": 2,
+   "executed": 6
+  },
+  {
+   "id": "train_spider-5009",
+   "hardness": "hard",
+   "correct": 6,
+   "executed": 6
+  },
+  {
+   "id": "train_spider-3313",
+   "hardness": "hard",
+   "correct": 0,
+   "executed": 0
+  },
+  {
+   "id": "train_spider-6291",
+   "hardness": "extra",
+   "correct": 0,
+   "executed": 4
+  },
+  {
+   "id": "train_spider-5648",
+   "hardness": "hard",
+   "correct": 5,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-2473",
+   "hardness": "hard",
+   "correct": 3,
+   "executed": 6
+  },
+  {
+   "id": "train_spider-2579",
+   "hardness": "medium",
+   "correct": 0,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-1101",
+   "hardness": "easy",
+   "correct": 7,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-1746",
+   "hardness": "easy",
+   "correct": 4,
+   "executed": 4
+  },
+  {
+   "id": "train_spider-4636",
+   "hardness": "easy",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-2443",
+   "hardness": "easy",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-3366",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-6775",
+   "hardness": "medium",
+   "correct": 7,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-1065",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-2599",
+   "hardness": "easy",
+   "correct": 6,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-256",
+   "hardness": "medium",
+   "correct": 7,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-1949",
+   "hardness": "medium",
+   "correct": 6,
+   "executed": 6
+  },
+  {
+   "id": "train_spider-5304",
+   "hardness": "hard",
+   "correct": 5,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-5649",
+   "hardness": "hard",
+   "correct": 7,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-1635",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-3859",
+   "hardness": "medium",
+   "correct": 6,
+   "executed": 6
+  },
+  {
+   "id": "train_spider-281",
+   "hardness": "medium",
+   "correct": 7,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-2921",
+   "hardness": "easy",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-4154",
+   "hardness": "easy",
+   "correct": 7,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-4883",
+   "hardness": "extra",
+   "correct": 6,
+   "executed": 6
+  },
+  {
+   "id": "train_spider-2533",
+   "hardness": "easy",
+   "correct": 7,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-3414",
+   "hardness": "easy",
+   "correct": 7,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-5471",
+   "hardness": "medium",
+   "correct": 7,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-5559",
+   "hardness": "hard",
+   "correct": 4,
+   "executed": 5
+  },
+  {
+   "id": "train_spider-1628",
+   "hardness": "hard",
+   "correct": 4,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-1136",
+   "hardness": "medium",
+   "correct": 2,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-4925",
+   "hardness": "extra",
+   "correct": 3,
+   "executed": 3
+  },
+  {
+   "id": "train_spider-5788",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-1118",
+   "hardness": "easy",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-5807",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-3862",
+   "hardness": "hard",
+   "correct": 0,
+   "executed": 4
+  },
+  {
+   "id": "train_spider-800",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-3610",
+   "hardness": "extra",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-4034",
+   "hardness": "easy",
+   "correct": 5,
+   "executed": 6
+  },
+  {
+   "id": "train_spider-6069",
+   "hardness": "easy",
+   "correct": 7,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-3374",
+   "hardness": "hard",
+   "correct": 3,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-4579",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-6968",
+   "hardness": "medium",
+   "correct": 7,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-5572",
+   "hardness": "hard",
+   "correct": 4,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-4300",
+   "hardness": "hard",
+   "correct": 5,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-6063",
+   "hardness": "easy",
+   "correct": 7,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-2146",
+   "hardness": "hard",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-1908",
+   "hardness": "easy",
+   "correct": 1,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-3535",
+   "hardness": "easy",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-1027",
+   "hardness": "extra",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-6142",
+   "hardness": "extra",
+   "correct": 4,
+   "executed": 5
+  },
+  {
+   "id": "train_spider-5462",
+   "hardness": "easy",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-1758",
+   "hardness": "medium",
+   "correct": 2,
+   "executed": 2
+  },
+  {
+   "id": "train_spider-2788",
+   "hardness": "easy",
+   "correct": 2,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-731",
+   "hardness": "easy",
+   "correct": 5,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-2783",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-3762",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-4592",
+   "hardness": "hard",
+   "correct": 6,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-6665",
+   "hardness": "extra",
+   "correct": 0,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-6792",
+   "hardness": "extra",
+   "correct": 6,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-3842",
+   "hardness": "hard",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-6699",
+   "hardness": "easy",
+   "correct": 7,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-6494",
+   "hardness": "easy",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-1317",
+   "hardness": "medium",
+   "correct": 3,
+   "executed": 4
+  },
+  {
+   "id": "train_spider-2475",
+   "hardness": "medium",
+   "correct": 5,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-5740",
+   "hardness": "extra",
+   "correct": 1,
+   "executed": 3
+  },
+  {
+   "id": "train_spider-3403",
+   "hardness": "extra",
+   "correct": 7,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-339",
+   "hardness": "easy",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-1490",
+   "hardness": "hard",
+   "correct": 6,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-1646",
+   "hardness": "extra",
+   "correct": 7,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-5319",
+   "hardness": "hard",
+   "correct": 2,
+   "executed": 6
+  },
+  {
+   "id": "train_spider-5957",
+   "hardness": "hard",
+   "correct": 2,
+   "executed": 3
+  },
+  {
+   "id": "train_spider-1798",
+   "hardness": "extra",
+   "correct": 5,
+   "executed": 5
+  },
+  {
+   "id": "train_spider-4287",
+   "hardness": "easy",
+   "correct": 7,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-4162",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-3805",
+   "hardness": "hard",
+   "correct": 4,
+   "executed": 6
+  },
+  {
+   "id": "train_spider-5836",
+   "hardness": "medium",
+   "correct": 3,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-4078",
+   "hardness": "medium",
+   "correct": 4,
+   "executed": 6
+  },
+  {
+   "id": "train_spider-3322",
+   "hardness": "extra",
+   "correct": 0,
+   "executed": 2
+  },
+  {
+   "id": "train_spider-3567",
+   "hardness": "medium",
+   "correct": 5,
+   "executed": 5
+  },
+  {
+   "id": "train_spider-4316",
+   "hardness": "hard",
+   "correct": 3,
+   "executed": 4
+  },
+  {
+   "id": "train_spider-2098",
+   "hardness": "easy",
+   "correct": 7,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-364",
+   "hardness": "medium",
+   "correct": 7,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-6482",
+   "hardness": "hard",
+   "correct": 7,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-6617",
+   "hardness": "easy",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-3790",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-6150",
+   "hardness": "easy",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-670",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-6580",
+   "hardness": "easy",
+   "correct": 7,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-6952",
+   "hardness": "hard",
+   "correct": 7,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-6737",
+   "hardness": "hard",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-4125",
+   "hardness": "easy",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-5689",
+   "hardness": "medium",
+   "correct": 7,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-4840",
+   "hardness": "hard",
+   "correct": 5,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-3288",
+   "hardness": "medium",
+   "correct": 1,
+   "executed": 6
+  },
+  {
+   "id": "train_spider-2465",
+   "hardness": "hard",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-6212",
+   "hardness": "easy",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-3160",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-1008",
+   "hardness": "easy",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-5369",
+   "hardness": "medium",
+   "correct": 6,
+   "executed": 6
+  },
+  {
+   "id": "train_spider-375",
+   "hardness": "medium",
+   "correct": 7,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-1514",
+   "hardness": "easy",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-3749",
+   "hardness": "medium",
+   "correct": 7,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-4626",
+   "hardness": "medium",
+   "correct": 6,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-3853",
+   "hardness": "extra",
+   "correct": 2,
+   "executed": 5
+  },
+  {
+   "id": "train_spider-2888",
+   "hardness": "hard",
+   "correct": 2,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-1465",
+   "hardness": "easy",
+   "correct": 6,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-5928",
+   "hardness": "hard",
+   "correct": 2,
+   "executed": 5
+  },
+  {
+   "id": "train_spider-2505",
+   "hardness": "medium",
+   "correct": 0,
+   "executed": 4
+  },
+  {
+   "id": "train_spider-238",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-4934",
+   "hardness": "medium",
+   "correct": 5,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-1346",
+   "hardness": "hard",
+   "correct": 4,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-5290",
+   "hardness": "easy",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-4822",
+   "hardness": "medium",
+   "correct": 0,
+   "executed": 4
+  },
+  {
+   "id": "train_spider-3216",
+   "hardness": "medium",
+   "correct": 2,
+   "executed": 4
+  },
+  {
+   "id": "train_spider-4082",
+   "hardness": "medium",
+   "correct": 0,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-5838",
+   "hardness": "medium",
+   "correct": 5,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-3856",
+   "hardness": "medium",
+   "correct": 4,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-6723",
+   "hardness": "medium",
+   "correct": 5,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-6746",
+   "hardness": "hard",
+   "correct": 6,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-2920",
+   "hardness": "easy",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-2349",
+   "hardness": "hard",
+   "correct": 3,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-2455",
+   "hardness": "medium",
+   "correct": 2,
+   "executed": 5
+  },
+  {
+   "id": "train_spider-4211",
+   "hardness": "hard",
+   "correct": 5,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-4532",
+   "hardness": "easy",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-1288",
+   "hardness": "extra",
+   "correct": 6,
+   "executed": 6
+  },
+  {
+   "id": "train_spider-5863",
+   "hardness": "medium",
+   "correct": 4,
+   "executed": 4
+  },
+  {
+   "id": "train_spider-4656",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-945",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-4117",
+   "hardness": "easy",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-5718",
+   "hardness": "extra",
+   "correct": 5,
+   "executed": 6
+  },
+  {
+   "id": "train_spider-3293",
+   "hardness": "extra",
+   "correct": 1,
+   "executed": 6
+  },
+  {
+   "id": "train_spider-4037",
+   "hardness": "medium",
+   "correct": 7,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-6886",
+   "hardness": "medium",
+   "correct": 5,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-1160",
+   "hardness": "medium",
+   "correct": 7,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-2796",
+   "hardness": "hard",
+   "correct": 3,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-5638",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-1674",
+   "hardness": "extra",
+   "correct": 4,
+   "executed": 5
+  },
+  {
+   "id": "train_spider-188",
+   "hardness": "medium",
+   "correct": 0,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-4430",
+   "hardness": "extra",
+   "correct": 7,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-329",
+   "hardness": "medium",
+   "correct": 1,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-3347",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-3209",
+   "hardness": "medium",
+   "correct": 0,
+   "executed": 3
+  },
+  {
+   "id": "train_spider-6726",
+   "hardness": "easy",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-5539",
+   "hardness": "easy",
+   "correct": 6,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-2060",
+   "hardness": "extra",
+   "correct": 2,
+   "executed": 3
+  },
+  {
+   "id": "train_spider-26",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-4492",
+   "hardness": "medium",
+   "correct": 7,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-655",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-2834",
+   "hardness": "medium",
+   "correct": 7,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-19",
+   "hardness": "easy",
+   "correct": 4,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-4152",
+   "hardness": "hard",
+   "correct": 6,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-6976",
+   "hardness": "medium",
+   "correct": 4,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-4549",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-6234",
+   "hardness": "medium",
+   "correct": 6,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-1617",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-6685",
+   "hardness": "medium",
+   "correct": 2,
+   "executed": 5
+  },
+  {
+   "id": "train_spider-6624",
+   "hardness": "easy",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-6600",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-2144",
+   "hardness": "medium",
+   "correct": 6,
+   "executed": 6
+  },
+  {
+   "id": "train_spider-4493",
+   "hardness": "medium",
+   "correct": 4,
+   "executed": 5
+  },
+  {
+   "id": "train_spider-674",
+   "hardness": "medium",
+   "correct": 2,
+   "executed": 4
+  },
+  {
+   "id": "train_spider-3712",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-1124",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-3398",
+   "hardness": "extra",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-6303",
+   "hardness": "easy",
+   "correct": 7,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-3229",
+   "hardness": "easy",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-1364",
+   "hardness": "hard",
+   "correct": 6,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-1389",
+   "hardness": "medium",
+   "correct": 7,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-6694",
+   "hardness": "medium",
+   "correct": 5,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-2471",
+   "hardness": "extra",
+   "correct": 2,
+   "executed": 2
+  },
+  {
+   "id": "train_spider-3814",
+   "hardness": "medium",
+   "correct": 3,
+   "executed": 3
+  },
+  {
+   "id": "train_spider-39",
+   "hardness": "extra",
+   "correct": 4,
+   "executed": 5
+  },
+  {
+   "id": "train_spider-2619",
+   "hardness": "medium",
+   "correct": 5,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-3581",
+   "hardness": "hard",
+   "correct": 4,
+   "executed": 6
+  },
+  {
+   "id": "train_spider-531",
+   "hardness": "hard",
+   "correct": 0,
+   "executed": 2
+  },
+  {
+   "id": "train_spider-1660",
+   "hardness": "medium",
+   "correct": 7,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-3281",
+   "hardness": "medium",
+   "correct": 1,
+   "executed": 2
+  },
+  {
+   "id": "train_spider-1849",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-6616",
+   "hardness": "medium",
+   "correct": 6,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-6615",
+   "hardness": "extra",
+   "correct": 5,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-1540",
+   "hardness": "extra",
+   "correct": 6,
+   "executed": 6
+  },
+  {
+   "id": "train_spider-1829",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-115",
+   "hardness": "medium",
+   "correct": 2,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-6996",
+   "hardness": "hard",
+   "correct": 1,
+   "executed": 2
+  },
+  {
+   "id": "train_spider-315",
+   "hardness": "extra",
+   "correct": 0,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-4972",
+   "hardness": "medium",
+   "correct": 2,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-2355",
+   "hardness": "easy",
+   "correct": 6,
+   "executed": 6
+  },
+  {
+   "id": "train_spider-5593",
+   "hardness": "extra",
+   "correct": 1,
+   "executed": 5
+  },
+  {
+   "id": "train_spider-987",
+   "hardness": "medium",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-129",
+   "hardness": "easy",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-2809",
+   "hardness": "hard",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-1926",
+   "hardness": "hard",
+   "correct": 1,
+   "executed": 7
+  },
+  {
+   "id": "train_spider-347",
+   "hardness": "easy",
+   "correct": 8,
+   "executed": 8
+  },
+  {
+   "id": "train_spider-5961",
+   "hardness": "hard",
+   "correct": 3,
+   "executed": 3
+  }
+ ]
+}
