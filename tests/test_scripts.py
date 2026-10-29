@@ -131,6 +131,32 @@ def test_grpo_probe_and_inputs(ws, tmp_path):
     assert ids["n"] == len(ids["ids"]) == 6 and pool["pool"] + sum(pool["dropped"].values()) == pool["train"] and pool["dropped"]["db_empty"] == 14
 
 
+def test_grpo_report(tmp_path):
+    import grpo_report
+
+    from sqltuner.runner import Prediction, write_predictions
+
+    row = {"reward": 0.5, "correct": 0.4, "executed": 0.9, "executed_wrong": 0.5, "zero_var_groups": 0.3, "kl": 0.001, "completion_tokens": 30.0,
+           "completion_tokens_p95": 60.0, "truncated": 0.0, "gen_s": 1.0, "reward_s": 0.1, "ref_s": 0.5, "train_s": 1.0, "peak_gib": None,
+           "failures": {"syntax": 0.05}, "flags": {"empty_result": 0.1}}
+    hist = [dict(row, step=s) for s in range(1, 5)]
+    main = {"steps": 4, "history": hist, "evals": [{"step": 0, "val_ex": 0.70}, {"step": 2, "val_ex": 0.72}, {"step": 4, "val_ex": 0.72}],
+            "examples": {"empty_result": [{"sql": "x"}] * 3}}
+    abl = {"steps": 2, "history": hist[:2], "evals": [{"step": 0, "val_ex": 0.70}, {"step": 2, "val_ex": 0.71}]}
+    (tmp_path / "m.json").write_text(json.dumps(main))
+    (tmp_path / "a.json").write_text(json.dumps(abl))
+    (tmp_path / "an.json").write_text(json.dumps({"items": [{"id": "q1", "category": "wrong join path"}, {"id": "q2", "category": "wrong join path"}]}))
+    write_predictions([Prediction("q1", "d", "easy", "Q", "SELECT 1", "SELECT 1", True, True, None, False),
+                       Prediction("q2", "d", "easy", "Q", "SELECT 1", "SELECT 2", False, True, None, False)], tmp_path / "p.jsonl")
+    assert grpo_report.main(["--main", str(tmp_path / "m.json"), "--ablation", str(tmp_path / "a.json"), "--grpo-preds", str(tmp_path / "p.jsonl"),
+                             "--analysis", str(tmp_path / "an.json"), "--window", "2", "--out", str(tmp_path / "r.json")]) == 0
+    r = json.loads((tmp_path / "r.json").read_text())
+    assert r["chosen"] == {"step": 2, "val_ex": 0.72}  # a tie with step 4 goes to the earlier step
+    assert [w["steps"] for w in r["windows"]] == ["1-2", "3-4"] and r["windows"][0]["fail_syntax"] == 0.05 and r["windows"][0]["flag_empty_result"] == 0.1
+    assert r["ablation"]["common_step"] == 2 and r["ablation"]["val_ex"] == {"main": 0.72, "ablation": 0.71} and len(r["flag_examples"]["empty_result"]) == 2
+    assert r["sft_failures_fixed"]["fixed"] == 1 and r["sft_failures_fixed"]["by_category"]["wrong join path"] == {"n": 2, "fixed": 1}
+
+
 def test_pool_weights():
     from sqltuner.data import Example
 

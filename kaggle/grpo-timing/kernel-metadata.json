@@ -1,0 +1,16 @@
+{
+  "id": "davutkursun/sql-tuner-grpo-timing",
+  "title": "sql-tuner-grpo-timing",
+  "code_file": "sql-tuner-grpo-timing.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "dataset_sources": [],
+  "competition_sources": [],
+  "kernel_sources": [
+    "davutkursun/sql-tuner-sft"
+  ],
+  "model_sources": []
+}
