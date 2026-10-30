@@ -191,3 +191,23 @@ def test_kaggle_notebook(tmp_path):
     exec(report, {})  # noqa: S102 - our own generated cell
     status = json.loads((tmp_path / "out" / "status.json").read_text())
     assert [s["status"] for s in status] == ["ok", "FAILED", "not run"] and status[1]["cmd"] == cmds[1]
+
+
+def test_kaggle_notebook_on_two_gpus(tmp_path):
+    import shlex
+    import subprocess
+
+    gpu = f"{shlex.quote(sys.executable)} -c \"import os; print('gpu', os.environ['CUDA_VISIBLE_DEVICES'])"
+    cmds = [gpu + '"', gpu + '; raise SystemExit(1)"', gpu + '"']
+    assert make_kaggle_notebook.main(["--name", "vote", *[x for c in cmds for x in ("--cmd", c)], "--gpus", "2", "--out", str(tmp_path)]) == 0
+    nb = json.loads((tmp_path / "vote" / "sql-tuner-vote.ipynb").read_text())
+    cell = nb["cells"][2]["source"]
+    assert cell.startswith("%%bash\n")  # a cell magic: IPython does not expand the commands
+    status, out = tmp_path / "status", tmp_path / "out"
+    body = cell.split("\n", 1)[1].replace("/tmp/cmd_status", str(status)).replace("/kaggle/working/out", str(out))
+    shown = subprocess.run(["bash", "-c", body], capture_output=True, text=True, check=True).stdout
+    assert sorted(status.read_text().splitlines()) == ["1 ok", "2 FAILED", "3 ok"] and shown.count("=== ") == 3
+    assert [(out / "logs" / f"cmd_{i}.log").read_text() for i in (1, 2, 3)] == ["gpu 0\n", "gpu 1\n", "gpu 0\n"]  # 1 and 3 on GPU 0, 2 on GPU 1
+    report = nb["cells"][4]["source"].replace("/tmp/cmd_status", str(status)).replace("/kaggle/working/out", str(out))
+    exec(report, {})  # noqa: S102 - our own generated cell
+    assert [s["status"] for s in json.loads((out / "status.json").read_text())] == ["ok", "FAILED", "ok"]

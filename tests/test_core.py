@@ -328,6 +328,33 @@ def test_sampling_in_chunks_keeps_the_layout(tiny):
     assert all(int(s.comp_mask[i].sum()) <= s.C and bool(s.truncated[i]) == (int(s.comp_mask[i].sum()) == 6) for i in range(6))
 
 
+def test_a_batch_out_of_gpu_memory_is_redone_one_prompt_at_a_time(tiny, monkeypatch):
+    import torch
+
+    be = HFBackend(str(tiny), device="cpu", batch_size=4)
+    convs = [messages("CREATE TABLE t (a INT);", q) for q in ("How many?", "Largest a?", "Smallest a of all the rows?")]
+    want = [[r.text for r in g] for g in HFBackend(str(tiny), tok=be.tok, model=be.model, device="cpu", batch_size=1).generate(convs, max_new_tokens=6)]
+    real, calls = be.model.generate, []
+
+    def generate(**kw):
+        calls.append(len(kw["input_ids"]))
+        if len(kw["input_ids"]) > 1:
+            raise torch.cuda.OutOfMemoryError("CUDA out of memory")
+        return real(**kw)
+
+    monkeypatch.setattr(be.model, "generate", generate)
+    got = be.generate(convs, max_new_tokens=6)  # greedy: the same replies as one prompt per call
+    assert calls == [3, 1, 1, 1] and be.oom_splits == 1 and [[r.text for r in g] for g in got] == want
+    assert [len(g) for g in be.generate(convs, n=2, temperature=0.7, max_new_tokens=6)] == [2, 2, 2]  # each prompt keeps its n samples
+
+    def oom(**kw):
+        raise torch.cuda.OutOfMemoryError("CUDA out of memory")
+
+    monkeypatch.setattr(be.model, "generate", oom)
+    with pytest.raises(torch.cuda.OutOfMemoryError):  # one prompt that does not fit is an error, never a skipped question
+        be.generate(convs[:1], max_new_tokens=6)
+
+
 def test_train_grpo_checkpoints_evals_and_guard(tiny, tmp_path):
     import torch
 

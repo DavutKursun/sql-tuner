@@ -105,7 +105,8 @@ def main(argv=None, backend_override=None) -> int:
     summary = summarize(preds, usage, {"backend": a.backend, "adapter": a.adapter, "merge_adapter": a.merge_adapter, "split": a.split, "tag": tag, "few_shot": a.few_shot, "samples": a.samples,
                                        "sample_rows": a.sample_rows, "limit": a.limit, "run_date": str(date.today()), "seed": a.seed, "minutes": round((time.time() - t) / 60, 2),
                                        "thinking": getattr(backend, "thinking", None), "stopped_early": len(preds) < len(examples),
-                                       "device": getattr(backend, "device", None), "batch_size": a.batch_size if a.backend.startswith("hf:") else None})
+                                       "device": getattr(backend, "device", None), "batch_size": a.batch_size if a.backend.startswith("hf:") else None,
+                                       "oom_splits": getattr(backend, "oom_splits", None)})
     (out_dir / f"{tag}.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     acc = summary["accuracy"]
     print(f"{tag} on {a.split}: EX {acc['ex']:.4f}  CI by question [{acc['ci_case'][0]:.4f}, {acc['ci_case'][1]:.4f}]  "

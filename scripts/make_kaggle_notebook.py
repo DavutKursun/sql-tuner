@@ -4,7 +4,8 @@ eval/results/ into /kaggle/working (the kernel output). No secrets are needed: t
 `kaggle kernels output`.
 
 A failing shell command does not fail a notebook, so Kaggle says "complete" either way: each command's outcome is
-written to out/status.json (and printed last) — read it after downloading the output.
+written to out/status.json (and printed last) — read it after downloading the output. `--gpus 2` runs the commands two
+at a time, one per T4, with a log file per command.
 
     python scripts/make_kaggle_notebook.py --user <kaggle username> --name sft \
         --cmd "python scripts/train_sft.py --base Qwen/Qwen2.5-Coder-1.5B-Instruct --out models/sft" --cmd "python scripts/eval_model.py ..."
@@ -35,9 +36,19 @@ def main(argv=None) -> int:
     ap.add_argument("--user", default="USERNAME", help="Kaggle username (only the name; never the key)")
     ap.add_argument("--branch", default="main")
     ap.add_argument("--kernel-source", action="append", default=[], help="<user>/<kernel>: its output is mounted under /kaggle/input")
+    ap.add_argument("--gpus", type=int, default=1, help="> 1: command i runs on GPU (i - 1) %% gpus, the GPUs side by side (Kaggle's T4 x2), each "
+                    "GPU's commands in order; each command's output goes to out/logs/cmd_<i>.log, printed when all are done")
     ap.add_argument("--out", type=Path, default=ROOT / "kaggle")
     a = ap.parse_args(argv)
-    run = "\n".join(f'!{c} && echo "{i} ok" >> {STATUS} || echo "{i} FAILED" >> {STATUS}' for i, c in enumerate(a.cmd, 1))
+    if a.gpus > 1:  # a bash cell (no IPython expansion); every command still records its own outcome
+        logs = "/kaggle/working/out/logs"
+        queues = [[(i, c) for i, c in enumerate(a.cmd, 1) if (i - 1) % a.gpus == g] for g in range(a.gpus)]
+        run = f"%%bash\nmkdir -p {logs}\n" + "".join(
+            f"(export CUDA_VISIBLE_DEVICES={g} PYTHONUNBUFFERED=1; "
+            + "; ".join(f'({c}) > {logs}/cmd_{i}.log 2>&1 && echo "{i} ok" >> {STATUS} || echo "{i} FAILED" >> {STATUS}' for i, c in q) + ") &\n"
+            for g, q in enumerate(queues) if q) + f'wait\nfor f in {logs}/cmd_*.log; do echo "=== $f"; cat "$f"; done'
+    else:
+        run = "\n".join(f'!{c} && echo "{i} ok" >> {STATUS} || echo "{i} FAILED" >> {STATUS}' for i, c in enumerate(a.cmd, 1))
     report = (f"import json, pathlib\ncmds = {json.dumps(a.cmd)}\n"
               f"done = dict(line.split(' ', 1) for line in pathlib.Path('{STATUS}').read_text().split('\\n') if line) if pathlib.Path('{STATUS}').exists() else {{}}\n"
               "status = [{'cmd': c, 'status': done.get(str(i), 'not run')} for i, c in enumerate(cmds, 1)]\n"

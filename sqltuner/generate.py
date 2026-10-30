@@ -148,33 +148,51 @@ class HFBackend(Backend):
         self.tok, self.model, self.device = tok, model, device or pick_device()
         self.batch_size = batch_size
         self.model_id, self.adapter = model_id, adapter
+        self.oom_splits = 0  # batches redone one prompt at a time after running out of GPU memory
 
     def generate(self, batch, n=1, temperature=0.0, max_new_tokens=GEN.max_new_tokens):
-        import torch
-
-        from .prompts import apply_chat_template
-
         out: list[list[Reply]] = []
         self.model.eval()
         self.tok.padding_side = "left"
         for start in range(0, len(batch), self.batch_size):
-            convs = batch[start : start + self.batch_size]
-            texts = [apply_chat_template(self.tok, c) for c in convs]
-            enc = self.tok(texts, return_tensors="pt", padding=True, add_special_tokens=False).to(self.device)
-            t0 = time.perf_counter()
+            out += self._generate(batch[start : start + self.batch_size], n, temperature, max_new_tokens)
+        return out
+
+    def _generate(self, convs, n, temperature, max_new_tokens) -> list[list[Reply]]:
+        """One generate() call. It copies each prompt n times before a prefill whose attention is quadratic in the prompt
+        length, so a batch that runs out of GPU memory is redone one prompt at a time, each prompt still with its n samples
+        (a T4 died on 4 prompts x 8 samples of ~1.5k tokens): memory decides the split, the decoding stays the same."""
+        import torch
+
+        from .prompts import apply_chat_template
+
+        texts = [apply_chat_template(self.tok, c) for c in convs]
+        enc = self.tok(texts, return_tensors="pt", padding=True, add_special_tokens=False).to(self.device)
+        t0 = time.perf_counter()
+        try:
             with torch.no_grad():
                 gen = self.model.generate(input_ids=enc["input_ids"], attention_mask=enc["attention_mask"], max_new_tokens=max_new_tokens,
                                           **sampling_kwargs(temperature), num_return_sequences=n, pad_token_id=self.tok.pad_token_id)
-            ms = (time.perf_counter() - t0) * 1000 / (len(convs) * n)
-            new = gen[:, enc["input_ids"].shape[1] :]
-            prompt_lens = enc["attention_mask"].sum(1).tolist()
-            for i in range(len(convs)):
-                group = []
-                for j in range(n):
-                    ids = new[i * n + j]
-                    comp = int((ids != self.tok.pad_token_id).sum())
-                    group.append(Reply(self.tok.decode(ids, skip_special_tokens=True), int(prompt_lens[i]), comp, ms))
-                out.append(group)
+        except torch.cuda.OutOfMemoryError:
+            if len(convs) == 1:
+                raise
+            gen = None
+        if gen is None:  # outside the except block, so the failed call's tensors are already released
+            del enc
+            torch.cuda.empty_cache()
+            self.oom_splits += 1
+            return [group for c in convs for group in self._generate([c], n, temperature, max_new_tokens)]
+        ms = (time.perf_counter() - t0) * 1000 / (len(convs) * n)
+        new = gen[:, enc["input_ids"].shape[1] :]
+        prompt_lens = enc["attention_mask"].sum(1).tolist()
+        out = []
+        for i in range(len(convs)):
+            group = []
+            for j in range(n):
+                ids = new[i * n + j]
+                comp = int((ids != self.tok.pad_token_id).sum())
+                group.append(Reply(self.tok.decode(ids, skip_special_tokens=True), int(prompt_lens[i]), comp, ms))
+            out.append(group)
         return out
 
 

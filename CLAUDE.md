@@ -153,6 +153,18 @@ self-hosted deployment. This is the most asked-about topic in ML interviews righ
     - `python scripts/eval_model.py --backend anthropic:claude-haiku-5-5 --split dev --final --few-shot 3 --max-usd 5`
     - the same with `anthropic:claude-sonnet-5-5 … --max-usd 8`
     - `anthropic:claude-haiku-5-5 --split test … --max-usd 5`
+  - **Rerun after a crash (2026-10-30).**
+    - *Crash:* `final-test` commands 5–6 (GRPO and SFT vote-8 on test) died with CUDA out of memory after 48 of 2,147
+      questions. The failing call was the prefill of 4 `e_commerce` prompts × 8 samples (32 sequences of ~1.5k tokens,
+      12.1 GiB allocated); the four greedy / 3-shot rows ran. Test also has 39 batches of 2,000–2,412 tokens, longer
+      than any on val (1,732) or dev (1,985), so the same command would die again.
+    - *First output kept:* `kaggle/final-test/output` (log with the traceback, `status.json`). No predictions were
+      written; the log's progress lines are the only vote-8 test numbers seen.
+    - *Fix (memory only; nothing in it depends on a test answer):* a batch that runs out of GPU memory is redone one
+      prompt at a time, each prompt still with its 8 samples. T 0.7, 256 tokens, seed 7 and the vote are unchanged, and batches
+      that fit run as frozen. The summary counts the split batches (`oom_splits`).
+    - *Rerun:* kernel `kaggle/final-test-vote8` runs the same two commands side by side on the kernel's two T4s, one per
+      GPU (`make_kaggle_notebook.py --gpus 2`). Each process seeds its own sampler, as a sequential run would.
 
 ## 3. Data
 
